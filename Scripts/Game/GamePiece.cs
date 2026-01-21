@@ -8,8 +8,8 @@ public partial class GamePiece : RigidBody3D
 
     private bool _hasLanded = false;
     private float _timeSinceSpawn = 0f;
-    private const float MinTimeBeforeLanding = 0.5f; // Don't check landing immediately
-    private const float VelocityThreshold = 0.5f; // Consider landed when velocity is below this
+    private const float MinTimeBeforeLanding = 0.5f;
+    private const float VelocityThreshold = 0.5f;
 
     public Action OnLanded { get; set; }
 
@@ -26,6 +26,7 @@ public partial class GamePiece : RigidBody3D
         if (LinearVelocity.Length() < VelocityThreshold)
         {
             _hasLanded = true;
+            AudioManager.Instance?.PlayPieceLand();
             EmitSignal(SignalName.PieceLanded);
             OnLanded?.Invoke();
         }

@@ -1,24 +1,36 @@
-[gd_scene load_steps=7 format=3 uid="uid://dp2x4k6m8n0rv"]
+[gd_scene load_steps=8 format=3 uid="uid://dp2x4k6m8n0rv"]
 
 [ext_resource type="Script" path="res://Scripts/Game/GamePiece.cs" id="1_script"]
+[ext_resource type="Shader" path="res://Resources/Shaders/jelly.gdshader" id="2_jelly"]
+[ext_resource type="Script" path="res://Scripts/Game/JellyEffect.cs" id="3_jellyeffect"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x"]
-albedo_color = Color(0.9, 0.3, 0.3, 1)
-emission_enabled = true
-emission = Color(0.4, 0.1, 0.1, 1)
-emission_energy_multiplier = 0.3
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_x"]
+render_priority = 0
+shader = ExtResource("2_jelly")
+shader_parameter/base_color = Color(1.0, 0.3, 0.3, 0.5)
+shader_parameter/roughness = 0.02
+shader_parameter/specular_strength = 0.9
+shader_parameter/rim_power = 1.8
+shader_parameter/rim_intensity = 0.7
+shader_parameter/inner_color = Color(0.9, 0.15, 0.15, 1.0)
+shader_parameter/inner_glow = 0.6
+shader_parameter/squash_amount = 0.0
+shader_parameter/deform_origin = Vector3(0, 0, 0)
+shader_parameter/wobble_speed = 12.0
+shader_parameter/wobble_amount = 0.0
+shader_parameter/wobble_time = 0.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_bar1"]
-size = Vector3(0.6, 0.15, 0.15)
-
-[sub_resource type="BoxMesh" id="BoxMesh_bar2"]
-size = Vector3(0.6, 0.15, 0.15)
+size = Vector3(0.85, 0.22, 0.22)
+subdivide_width = 8
+subdivide_height = 4
+subdivide_depth = 4
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_x"]
-size = Vector3(0.5, 0.15, 0.5)
+size = Vector3(0.7, 0.22, 0.7)
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_piece"]
-bounce = 0.2
+bounce = 0.4
 
 [node name="XPiece" type="RigidBody3D"]
 script = ExtResource("1_script")
@@ -27,16 +39,21 @@ physics_material_override = SubResource("PhysicsMaterial_piece")
 axis_lock_angular_x = true
 axis_lock_angular_z = true
 continuous_cd = true
+contact_monitor = true
+max_contacts_reported = 4
 
 [node name="Bar1" type="MeshInstance3D" parent="."]
 transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 0, 0, 0)
 mesh = SubResource("BoxMesh_bar1")
-surface_material_override/0 = SubResource("StandardMaterial3D_x")
+surface_material_override/0 = SubResource("ShaderMaterial_x")
 
 [node name="Bar2" type="MeshInstance3D" parent="."]
 transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 0, 0, 0)
-mesh = SubResource("BoxMesh_bar2")
-surface_material_override/0 = SubResource("StandardMaterial3D_x")
+mesh = SubResource("BoxMesh_bar1")
+surface_material_override/0 = SubResource("ShaderMaterial_x")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("BoxShape3D_x")
+
+[node name="JellyEffect" type="Node" parent="."]
+script = ExtResource("3_jellyeffect")

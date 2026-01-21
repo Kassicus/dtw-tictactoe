@@ -9,10 +9,16 @@ public partial class AudioManager : Node
     private AudioStreamPlayer _musicPlayerCrossfade;
     private Tween _fadeTween;
 
-    // Track library
+    // Music library
     private List<AudioStream> _tracks = new();
     private List<int> _shuffledIndices = new();
     private int _currentIndex = -1;
+
+    // SFX library
+    private Dictionary<string, AudioStream> _sfx = new();
+    private Dictionary<string, List<AudioStream>> _sfxGroups = new();
+    private List<AudioStreamPlayer> _sfxPool = new();
+    private const int SfxPoolSize = 8;
 
     // Current state
     private bool _isPlaying = false;
@@ -33,8 +39,20 @@ public partial class AudioManager : Node
         _musicPlayerCrossfade.Bus = "Music";
         AddChild(_musicPlayerCrossfade);
 
+        // Create SFX player pool
+        for (int i = 0; i < SfxPoolSize; i++)
+        {
+            var sfxPlayer = new AudioStreamPlayer();
+            sfxPlayer.Bus = "SFX";
+            AddChild(sfxPlayer);
+            _sfxPool.Add(sfxPlayer);
+        }
+
         // Load all tracks from the Music folder
         LoadTracks();
+
+        // Load all SFX
+        LoadSFX();
 
         // Load saved volume settings
         LoadVolumeSettings();
@@ -80,6 +98,171 @@ public partial class AudioManager : Node
 
         // Initial shuffle
         Shuffle();
+    }
+
+    private void LoadSFX()
+    {
+        var sfxPath = "res://Resources/SFX/";
+        var dir = DirAccess.Open(sfxPath);
+
+        if (dir == null)
+        {
+            GD.Print("SFX folder not found, creating it...");
+            DirAccess.MakeDirAbsolute(ProjectSettings.GlobalizePath(sfxPath));
+            return;
+        }
+
+        dir.ListDirBegin();
+        var fileName = dir.GetNext();
+
+        while (fileName != "")
+        {
+            if (dir.CurrentIsDir() && !fileName.StartsWith("."))
+            {
+                // Load subfolder as an SFX group (for random selection)
+                LoadSFXGroup(sfxPath + fileName + "/", fileName);
+            }
+            else if (!dir.CurrentIsDir())
+            {
+                if (fileName.EndsWith(".ogg") || fileName.EndsWith(".mp3") || fileName.EndsWith(".wav"))
+                {
+                    var sfxName = fileName.GetBaseName();
+                    var stream = GD.Load<AudioStream>(sfxPath + fileName);
+                    if (stream != null)
+                    {
+                        _sfx[sfxName] = stream;
+                        GD.Print($"Loaded SFX: {sfxName}");
+                    }
+                }
+            }
+            fileName = dir.GetNext();
+        }
+
+        dir.ListDirEnd();
+    }
+
+    private void LoadSFXGroup(string path, string groupName)
+    {
+        var dir = DirAccess.Open(path);
+        if (dir == null) return;
+
+        var sounds = new List<AudioStream>();
+
+        dir.ListDirBegin();
+        var fileName = dir.GetNext();
+
+        while (fileName != "")
+        {
+            if (!dir.CurrentIsDir())
+            {
+                if (fileName.EndsWith(".ogg") || fileName.EndsWith(".mp3") || fileName.EndsWith(".wav"))
+                {
+                    var stream = GD.Load<AudioStream>(path + fileName);
+                    if (stream != null)
+                    {
+                        sounds.Add(stream);
+                    }
+                }
+            }
+            fileName = dir.GetNext();
+        }
+
+        dir.ListDirEnd();
+
+        if (sounds.Count > 0)
+        {
+            _sfxGroups[groupName] = sounds;
+            GD.Print($"Loaded SFX group '{groupName}' with {sounds.Count} sounds");
+        }
+    }
+
+    public void PlaySFX(string sfxName, float pitchVariation = 0f)
+    {
+        if (!_sfx.ContainsKey(sfxName))
+        {
+            GD.PrintErr($"SFX not found: {sfxName}");
+            return;
+        }
+
+        // Find an available player from the pool
+        AudioStreamPlayer player = null;
+        foreach (var p in _sfxPool)
+        {
+            if (!p.Playing)
+            {
+                player = p;
+                break;
+            }
+        }
+
+        // If all players are busy, use the first one (cut off oldest sound)
+        player ??= _sfxPool[0];
+
+        player.Stream = _sfx[sfxName];
+
+        // Apply pitch variation if specified
+        if (pitchVariation > 0)
+        {
+            player.PitchScale = 1.0f + (float)GD.RandRange(-pitchVariation, pitchVariation);
+        }
+        else
+        {
+            player.PitchScale = 1.0f;
+        }
+
+        player.Play();
+    }
+
+    public void PlaySFXGroup(string groupName, float pitchVariation = 0f)
+    {
+        if (!_sfxGroups.ContainsKey(groupName))
+        {
+            GD.PrintErr($"SFX group not found: {groupName}");
+            return;
+        }
+
+        var sounds = _sfxGroups[groupName];
+        var randomIndex = (int)(GD.Randi() % sounds.Count);
+        var stream = sounds[randomIndex];
+
+        // Find an available player from the pool
+        AudioStreamPlayer player = null;
+        foreach (var p in _sfxPool)
+        {
+            if (!p.Playing)
+            {
+                player = p;
+                break;
+            }
+        }
+
+        player ??= _sfxPool[0];
+
+        player.Stream = stream;
+
+        if (pitchVariation > 0)
+        {
+            player.PitchScale = 1.0f + (float)GD.RandRange(-pitchVariation, pitchVariation);
+        }
+        else
+        {
+            player.PitchScale = 1.0f;
+        }
+
+        player.Play();
+    }
+
+    public void PlayPieceLand()
+    {
+        // Try group first, fall back to single file
+        if (_sfxGroups.ContainsKey("PieceLand"))
+        {
+            PlaySFXGroup("PieceLand", 0.1f);
+        }
+        else if (_sfx.ContainsKey("piece_land"))
+        {
+            PlaySFX("piece_land", 0.1f);
+        }
     }
 
     private void Shuffle()
