@@ -3,6 +3,7 @@ using Godot;
 public partial class BoardController : Node3D
 {
     private Camera3D _camera;
+    private bool _isMenuBackground;
 
     // Currently hovered elements
     private Cell _hoveredCell;
@@ -13,14 +14,20 @@ public partial class BoardController : Node3D
 
     public override void _Ready()
     {
+        // Check if we're in a SubViewport (menu background)
+        _isMenuBackground = GetViewport() is SubViewport;
+
         // Get camera reference (it's a sibling in Main scene)
         _camera = GetViewport().GetCamera3D();
 
         // Initialize small boards
         InitializeBoards();
 
-        // Register with GameManager
-        GameManager.Instance?.SetBoardController(this);
+        // Only register with GameManager if not in menu background
+        if (!_isMenuBackground)
+        {
+            GameManager.Instance?.SetBoardController(this);
+        }
     }
 
     private void InitializeBoards()
@@ -41,11 +48,13 @@ public partial class BoardController : Node3D
 
     public override void _Process(double delta)
     {
+        if (_isMenuBackground) return;
         HandleHover();
     }
 
     public override void _Input(InputEvent @event)
     {
+        if (_isMenuBackground) return;
         if (@event is InputEventMouseButton mouseButton)
         {
             if (mouseButton.ButtonIndex == MouseButton.Left && mouseButton.Pressed)

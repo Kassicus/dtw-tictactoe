@@ -1,0 +1,221 @@
+[gd_scene load_steps=8 format=3 uid="uid://cm4n6p8r0t2xv"]
+
+[ext_resource type="Script" path="res://Scripts/UI/MainMenu.cs" id="1_mainmenu"]
+[ext_resource type="PackedScene" uid="uid://bf3k5n7p9r2tv" path="res://Scenes/Game/GameBoard.tscn" id="2_gameboard"]
+[ext_resource type="Script" path="res://Scripts/UI/MenuPieceSpawner.cs" id="3_spawner"]
+[ext_resource type="Shader" path="res://Resources/Shaders/blur.gdshader" id="4_blur"]
+[ext_resource type="Script" path="res://Scripts/UI/OrbitingCamera.cs" id="5_orbitcam"]
+
+[sub_resource type="Environment" id="Environment_menu"]
+background_mode = 1
+background_color = Color(0.15, 0.15, 0.2, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.6, 0.7, 1)
+ambient_light_energy = 0.8
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_blur"]
+shader = ExtResource("4_blur")
+shader_parameter/blur_amount = 2.5
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mainmenu")
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+render_target_update_mode = 4
+
+[node name="World" type="Node3D" parent="SubViewportContainer/SubViewport"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="SubViewportContainer/SubViewport/World"]
+environment = SubResource("Environment_menu")
+
+[node name="Camera3D" type="Camera3D" parent="SubViewportContainer/SubViewport/World"]
+transform = Transform3D(1, 0, 0, 0, 0.6, 0.8, 0, -0.8, 0.6, 20, 12, 0)
+fov = 60.0
+script = ExtResource("5_orbitcam")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="SubViewportContainer/SubViewport/World"]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 5, 10, 5)
+light_energy = 1.8
+shadow_enabled = true
+
+[node name="FillLight" type="DirectionalLight3D" parent="SubViewportContainer/SubViewport/World"]
+transform = Transform3D(0.866025, 0.353553, -0.353553, 0, 0.707107, 0.707107, 0.5, -0.612372, 0.612372, -5, 10, -5)
+light_color = Color(0.9, 0.92, 1, 1)
+light_energy = 0.7
+
+[node name="GameBoard" parent="SubViewportContainer/SubViewport/World" instance=ExtResource("2_gameboard")]
+
+[node name="PieceSpawner" type="Node3D" parent="SubViewportContainer/SubViewport/World"]
+script = ExtResource("3_spawner")
+
+[node name="BlurOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+material = SubResource("ShaderMaterial_blur")
+color = Color(1, 1, 1, 0)
+
+[node name="MainPanel" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 450.0
+grow_vertical = 2
+theme_override_constants/margin_left = 60
+theme_override_constants/margin_top = 100
+theme_override_constants/margin_bottom = 100
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = "Super Tic-Tac-Toe"
+horizontal_alignment = 0
+
+[node name="Spacer" type="Control" parent="MainPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="PlayButton" type="Button" parent="MainPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 32
+text = "Play"
+
+[node name="SettingsButton" type="Button" parent="MainPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 32
+text = "Settings"
+
+[node name="QuitButton" type="Button" parent="MainPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_font_sizes/font_size = 32
+text = "Quit"
+
+[node name="SettingsPanel" type="CenterContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 25
+
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Settings"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="SettingsPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="MasterContainer" type="HBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="MasterLabel" type="Label" parent="SettingsPanel/VBoxContainer/MasterContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Master"
+
+[node name="MasterSlider" type="HSlider" parent="SettingsPanel/VBoxContainer/MasterContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="MusicContainer" type="HBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="MusicLabel" type="Label" parent="SettingsPanel/VBoxContainer/MusicContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="SettingsPanel/VBoxContainer/MusicContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="SFXContainer" type="HBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="SFXLabel" type="Label" parent="SettingsPanel/VBoxContainer/SFXContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SFX"
+
+[node name="SFXSlider" type="HSlider" parent="SettingsPanel/VBoxContainer/SFXContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="ResolutionContainer" type="HBoxContainer" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ResolutionLabel" type="Label" parent="SettingsPanel/VBoxContainer/ResolutionContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Resolution"
+
+[node name="ResolutionOption" type="OptionButton" parent="SettingsPanel/VBoxContainer/ResolutionContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="Spacer2" type="Control" parent="SettingsPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="SettingsPanel/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 24
+text = "Back"
