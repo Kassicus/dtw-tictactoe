@@ -7,6 +7,7 @@ public partial class MainMenu : Control
     private Button _quitButton;
     private Control _settingsPanel;
     private Control _mainPanel;
+    private Control _gameModePanel;
 
     public override void _Ready()
     {
@@ -15,6 +16,7 @@ public partial class MainMenu : Control
         _settingsButton = GetNode<Button>("MainPanel/VBoxContainer/SettingsButton");
         _quitButton = GetNode<Button>("MainPanel/VBoxContainer/QuitButton");
         _settingsPanel = GetNode<Control>("SettingsPanel");
+        _gameModePanel = GetNode<Control>("GameModePanel");
 
         _playButton.Pressed += OnPlayPressed;
         _settingsButton.Pressed += OnSettingsPressed;
@@ -23,6 +25,15 @@ public partial class MainMenu : Control
         // Connect settings panel back button
         var backButton = _settingsPanel.GetNode<Button>("VBoxContainer/BackButton");
         backButton.Pressed += OnSettingsBackPressed;
+
+        // Connect game mode panel buttons
+        var pvpButton = _gameModePanel.GetNode<Button>("VBoxContainer/PlayerVsPlayerButton");
+        var pvcButton = _gameModePanel.GetNode<Button>("VBoxContainer/PlayerVsCPUButton");
+        var gameModeBackButton = _gameModePanel.GetNode<Button>("VBoxContainer/BackButton");
+
+        pvpButton.Pressed += OnPlayerVsPlayerPressed;
+        pvcButton.Pressed += OnPlayerVsCPUPressed;
+        gameModeBackButton.Pressed += OnGameModeBackPressed;
 
         // Connect resolution option
         var resolutionOption = _settingsPanel.GetNode<OptionButton>("VBoxContainer/ResolutionContainer/ResolutionOption");
@@ -98,7 +109,26 @@ public partial class MainMenu : Control
 
     private void OnPlayPressed()
     {
+        _mainPanel.Visible = false;
+        _gameModePanel.Visible = true;
+    }
+
+    private void OnPlayerVsPlayerPressed()
+    {
+        GameManager.CurrentGameMode = GameMode.PlayerVsPlayer;
         GetTree().ChangeSceneToFile("res://Scenes/Main.tscn");
+    }
+
+    private void OnPlayerVsCPUPressed()
+    {
+        GameManager.CurrentGameMode = GameMode.PlayerVsCPU;
+        GetTree().ChangeSceneToFile("res://Scenes/Main.tscn");
+    }
+
+    private void OnGameModeBackPressed()
+    {
+        _gameModePanel.Visible = false;
+        _mainPanel.Visible = true;
     }
 
     private void OnSettingsPressed()

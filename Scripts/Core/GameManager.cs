@@ -17,10 +17,12 @@ public enum GameState
 public partial class GameManager : Node
 {
     public static GameManager Instance { get; private set; }
+    public static GameMode CurrentGameMode { get; set; } = GameMode.PlayerVsPlayer;
 
     private PackedScene _xPieceScene;
     private PackedScene _oPieceScene;
     private BoardController _boardController;
+    private CPUPlayer _cpuPlayer;
 
     public Player CurrentPlayer { get; private set; } = Player.X;
     public GameState State { get; private set; } = GameState.Playing;
@@ -68,6 +70,14 @@ public partial class GameManager : Node
         // Load piece scenes
         _xPieceScene = GD.Load<PackedScene>("res://Scenes/Pieces/XPiece.tscn");
         _oPieceScene = GD.Load<PackedScene>("res://Scenes/Pieces/OPiece.tscn");
+    }
+
+    private void EnsureCPUPlayerExists()
+    {
+        if (CurrentGameMode == GameMode.PlayerVsCPU && _cpuPlayer == null)
+        {
+            _cpuPlayer = new CPUPlayer();
+        }
     }
 
     public void SetBoardController(BoardController controller)
@@ -213,6 +223,35 @@ public partial class GameManager : Node
     {
         CurrentPlayer = CurrentPlayer == Player.X ? Player.O : Player.X;
         EmitSignal(SignalName.TurnChanged, (int)CurrentPlayer);
+
+        // Trigger CPU move if it's the CPU's turn
+        if (CurrentGameMode == GameMode.PlayerVsCPU && CurrentPlayer == Player.O)
+        {
+            EnsureCPUPlayerExists();
+            ExecuteCPUMove();
+        }
+    }
+
+    private async void ExecuteCPUMove()
+    {
+        try
+        {
+            // Add delay for better UX
+            await ToSignal(GetTree().CreateTimer(0.5f), SceneTreeTimer.SignalName.Timeout);
+
+            // Make sure we're still in a valid state to make a move
+            if (State != GameState.Playing || CurrentPlayer != Player.O) return;
+
+            var (board, cell) = _cpuPlayer.GetBestMove(_boardController, Player.O);
+            if (cell != null && board != null)
+            {
+                PlacePiece(cell);
+            }
+        }
+        catch (System.Exception e)
+        {
+            GD.PrintErr($"CPU Move Error: {e.Message}");
+        }
     }
 
     public void ResetGame()

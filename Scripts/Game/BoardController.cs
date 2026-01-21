@@ -66,6 +66,13 @@ public partial class BoardController : Node3D
 
     private void HandleClick()
     {
+        // Block clicks when it's CPU's turn in PvCPU mode
+        if (GameManager.CurrentGameMode == GameMode.PlayerVsCPU &&
+            GameManager.Instance?.CurrentPlayer == Player.O)
+        {
+            return;
+        }
+
         // If we have a hovered cell that isn't occupied and board isn't won, place a piece
         if (_hoveredCell != null &&
             !_hoveredCell.IsOccupied &&

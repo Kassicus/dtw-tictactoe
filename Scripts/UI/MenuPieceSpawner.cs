@@ -69,15 +69,18 @@ public partial class MenuPieceSpawner : Node3D
         var spawnPos = new Vector3(x, SpawnHeight, z);
 
         // Random piece type
-        RigidBody3D piece;
+        GamePiece piece;
         if (GD.Randf() > 0.5f)
         {
-            piece = _xPieceScene.Instantiate<RigidBody3D>();
+            piece = _xPieceScene.Instantiate<GamePiece>();
         }
         else
         {
-            piece = _oPieceScene.Instantiate<RigidBody3D>();
+            piece = _oPieceScene.Instantiate<GamePiece>();
         }
+
+        // Disable landing sounds for menu background pieces
+        piece.PlayLandingSound = false;
 
         AddChild(piece);
         piece.GlobalPosition = spawnPos;

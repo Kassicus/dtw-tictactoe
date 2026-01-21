@@ -12,6 +12,7 @@ public partial class GamePiece : RigidBody3D
     private const float VelocityThreshold = 0.5f;
 
     public Action OnLanded { get; set; }
+    public bool PlayLandingSound { get; set; } = true;
 
     public override void _PhysicsProcess(double delta)
     {
@@ -26,7 +27,10 @@ public partial class GamePiece : RigidBody3D
         if (LinearVelocity.Length() < VelocityThreshold)
         {
             _hasLanded = true;
-            AudioManager.Instance?.PlayPieceLand();
+            if (PlayLandingSound)
+            {
+                AudioManager.Instance?.PlayPieceLand();
+            }
             EmitSignal(SignalName.PieceLanded);
             OnLanded?.Invoke();
         }
