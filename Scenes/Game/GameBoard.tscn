@@ -1,0 +1,45 @@
+[gd_scene load_steps=5 format=3 uid="uid://bf3k5n7p9r2tv"]
+
+[ext_resource type="PackedScene" uid="uid://dh2k3m8n4p6rv" path="res://Scenes/Game/SmallBoard.tscn" id="1_smallboard"]
+[ext_resource type="Script" path="res://Scripts/Game/BoardController.cs" id="2_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_base"]
+size = Vector3(11.5, 0.15, 11.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_base"]
+albedo_color = Color(0.18, 0.22, 0.28, 1)
+
+[node name="GameBoard" type="Node3D"]
+script = ExtResource("2_script")
+
+[node name="BasePlatform" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("BoxMesh_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_base")
+
+[node name="SmallBoard_0_0" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0, -3.7)
+
+[node name="SmallBoard_1_0" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.7)
+
+[node name="SmallBoard_2_0" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0, -3.7)
+
+[node name="SmallBoard_0_1" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0, 0)
+
+[node name="SmallBoard_1_1" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="SmallBoard_2_1" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0, 0)
+
+[node name="SmallBoard_0_2" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0, 3.7)
+
+[node name="SmallBoard_1_2" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.7)
+
+[node name="SmallBoard_2_2" parent="." instance=ExtResource("1_smallboard")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0, 3.7)
