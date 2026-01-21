@@ -18,6 +18,9 @@ public partial class BoardController : Node3D
 
         // Initialize small boards
         InitializeBoards();
+
+        // Register with GameManager
+        GameManager.Instance?.SetBoardController(this);
     }
 
     private void InitializeBoards()
@@ -54,8 +57,10 @@ public partial class BoardController : Node3D
 
     private void HandleClick()
     {
-        // If we have a hovered cell that isn't occupied, place a piece
-        if (_hoveredCell != null && !_hoveredCell.IsOccupied)
+        // If we have a hovered cell that isn't occupied and board isn't won, place a piece
+        if (_hoveredCell != null &&
+            !_hoveredCell.IsOccupied &&
+            !_hoveredCell.ParentBoard.IsWon)
         {
             GameManager.Instance?.PlacePiece(_hoveredCell);
         }
@@ -128,9 +133,12 @@ public partial class BoardController : Node3D
             _hoveredBoard?.Highlight();
         }
 
-        // Set new cell highlight
+        // Set new cell highlight (only if not in a won board and cell not occupied)
         _hoveredCell = cell;
-        _hoveredCell?.Highlight();
+        if (!board.IsWon && !cell.IsOccupied)
+        {
+            _hoveredCell?.Highlight();
+        }
     }
 
     private void SetHoveredBoard(SmallBoard board)

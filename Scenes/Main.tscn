@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://cx4m6n8p0r3sv"]
+[gd_scene load_steps=4 format=3 uid="uid://cx4m6n8p0r3sv"]
 
 [ext_resource type="PackedScene" uid="uid://bf3k5n7p9r2tv" path="res://Scenes/Game/GameBoard.tscn" id="1_gameboard"]
+[ext_resource type="PackedScene" uid="uid://dg5h7j9k1m3nv" path="res://Scenes/UI/GameOverUI.tscn" id="2_gameoverui"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -30,3 +31,5 @@ light_color = Color(0.9, 0.92, 1, 1)
 light_energy = 0.7
 
 [node name="GameBoard" parent="." instance=ExtResource("1_gameboard")]
+
+[node name="GameOverUI" parent="." instance=ExtResource("2_gameoverui")]

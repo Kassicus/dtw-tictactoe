@@ -7,21 +7,59 @@ public enum Player
     O
 }
 
+public enum GameState
+{
+    Playing,
+    WaitingForPiece,
+    GameOver
+}
+
 public partial class GameManager : Node
 {
     public static GameManager Instance { get; private set; }
 
     private PackedScene _xPieceScene;
     private PackedScene _oPieceScene;
-    private Camera3D _camera;
+    private BoardController _boardController;
 
     public Player CurrentPlayer { get; private set; } = Player.X;
+    public GameState State { get; private set; } = GameState.Playing;
+    public Player GameWinner { get; private set; } = Player.None;
+
+    // Track pending move info for when piece lands
+    private Player _pendingPlayer;
+    private SmallBoard _pendingBoard;
+
+    // Win patterns for the main board (same as small board)
+    private static readonly int[][] WinPatterns = new int[][]
+    {
+        // Rows
+        new[] { 0, 0, 1, 0, 2, 0 },
+        new[] { 0, 1, 1, 1, 2, 1 },
+        new[] { 0, 2, 1, 2, 2, 2 },
+        // Columns
+        new[] { 0, 0, 0, 1, 0, 2 },
+        new[] { 1, 0, 1, 1, 1, 2 },
+        new[] { 2, 0, 2, 1, 2, 2 },
+        // Diagonals
+        new[] { 0, 0, 1, 1, 2, 2 },
+        new[] { 2, 0, 1, 1, 0, 2 }
+    };
 
     [Signal]
     public delegate void TurnChangedEventHandler(Player player);
 
     [Signal]
     public delegate void PiecePlacedEventHandler(Player player, Vector2I boardPos, Vector2I cellPos);
+
+    [Signal]
+    public delegate void SmallBoardWonEventHandler(Player player, Vector2I boardPos);
+
+    [Signal]
+    public delegate void GameWonEventHandler(Player winner);
+
+    [Signal]
+    public delegate void GameDrawEventHandler();
 
     public override void _Ready()
     {
@@ -32,27 +70,32 @@ public partial class GameManager : Node
         _oPieceScene = GD.Load<PackedScene>("res://Scenes/Pieces/OPiece.tscn");
     }
 
-    public void SetCamera(Camera3D camera)
+    public void SetBoardController(BoardController controller)
     {
-        _camera = camera;
+        _boardController = controller;
     }
 
     public void PlacePiece(Cell cell)
     {
+        if (State != GameState.Playing) return;
         if (cell.IsOccupied) return;
+        if (cell.ParentBoard.IsWon) return;
+
+        _pendingPlayer = CurrentPlayer;
+        _pendingBoard = cell.ParentBoard;
 
         // Mark cell as occupied
         cell.SetOccupied(CurrentPlayer);
 
-        // Spawn the piece
+        // Set state to waiting
+        State = GameState.WaitingForPiece;
+
+        // Spawn the piece with landing callback
         SpawnPiece(cell);
 
         // Emit signal
         EmitSignal(SignalName.PiecePlaced, (int)CurrentPlayer,
             cell.ParentBoard.BoardPosition, cell.LocalPosition);
-
-        // Switch turns
-        SwitchTurn();
     }
 
     private void SpawnPiece(Cell cell)
@@ -60,26 +103,110 @@ public partial class GameManager : Node
         // Get the cell's world position
         var cellWorldPos = cell.GlobalPosition;
 
-        // Spawn position: directly above the cell, high enough to fall past camera
-        var spawnPos = new Vector3(cellWorldPos.X, 35f, cellWorldPos.Z);
+        // Spawn position: just above the camera so pieces appear quickly
+        var spawnPos = new Vector3(cellWorldPos.X, 22f, cellWorldPos.Z);
 
         // Create the piece
-        RigidBody3D piece;
+        GamePiece piece;
         if (CurrentPlayer == Player.X)
         {
-            piece = _xPieceScene.Instantiate<RigidBody3D>();
+            piece = _xPieceScene.Instantiate<GamePiece>();
         }
         else
         {
-            piece = _oPieceScene.Instantiate<RigidBody3D>();
+            piece = _oPieceScene.Instantiate<GamePiece>();
         }
+
+        // Set landing callback
+        piece.OnLanded = OnPieceLanded;
 
         // Add to scene and set position
         GetTree().CurrentScene.AddChild(piece);
         piece.GlobalPosition = spawnPos;
 
+        // Give initial downward velocity so pieces fall faster
+        piece.LinearVelocity = new Vector3(0, -15f, 0);
+
         // Add slight random rotation for visual interest
         piece.RotateY((float)GD.RandRange(-0.3, 0.3));
+    }
+
+    private void OnPieceLanded()
+    {
+        if (State != GameState.WaitingForPiece) return;
+
+        var player = _pendingPlayer;
+        var smallBoard = _pendingBoard;
+
+        // Check if this move wins the small board
+        if (smallBoard.CheckAndShowWin(player))
+        {
+            EmitSignal(SignalName.SmallBoardWon, (int)player, smallBoard.BoardPosition);
+
+            // Check if this wins the game
+            if (CheckForGameWin(player))
+            {
+                State = GameState.GameOver;
+                GameWinner = player;
+                EmitSignal(SignalName.GameWon, (int)player);
+                GD.Print($"Game Over! {player} wins!");
+                return;
+            }
+        }
+
+        // Check for draw (all boards either won or full)
+        if (CheckForDraw())
+        {
+            State = GameState.GameOver;
+            EmitSignal(SignalName.GameDraw);
+            GD.Print("Game Over! It's a draw!");
+            return;
+        }
+
+        // Switch turns and allow next move
+        State = GameState.Playing;
+        SwitchTurn();
+    }
+
+    private bool CheckForGameWin(Player player)
+    {
+        if (_boardController == null) return false;
+
+        foreach (var pattern in WinPatterns)
+        {
+            var board1 = _boardController.SmallBoards[pattern[0], pattern[1]];
+            var board2 = _boardController.SmallBoards[pattern[2], pattern[3]];
+            var board3 = _boardController.SmallBoards[pattern[4], pattern[5]];
+
+            if (board1.Winner == player &&
+                board2.Winner == player &&
+                board3.Winner == player)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool CheckForDraw()
+    {
+        if (_boardController == null) return false;
+
+        // Check if all small boards are either won or full
+        for (int x = 0; x < 3; x++)
+        {
+            for (int y = 0; y < 3; y++)
+            {
+                var board = _boardController.SmallBoards[x, y];
+                if (!board.IsWon && !board.IsFull())
+                {
+                    return false; // Still playable cells
+                }
+            }
+        }
+
+        return true;
     }
 
     private void SwitchTurn()
@@ -91,6 +218,8 @@ public partial class GameManager : Node
     public void ResetGame()
     {
         CurrentPlayer = Player.X;
+        State = GameState.Playing;
+        GameWinner = Player.None;
         EmitSignal(SignalName.TurnChanged, (int)CurrentPlayer);
     }
 }

@@ -1,4 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://cq3y5l7oap1sv"]
+[gd_scene load_steps=6 format=3 uid="uid://cq3y5l7oap1sv"]
+
+[ext_resource type="Script" path="res://Scripts/Game/GamePiece.cs" id="1_script"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o"]
 albedo_color = Color(0.3, 0.7, 0.9, 1)
@@ -18,6 +20,7 @@ radius = 0.3
 bounce = 0.2
 
 [node name="OPiece" type="RigidBody3D"]
+script = ExtResource("1_script")
 mass = 2.0
 physics_material_override = SubResource("PhysicsMaterial_piece")
 axis_lock_angular_x = true

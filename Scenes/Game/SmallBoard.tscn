@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://dh2k3m8n4p6rv"]
+[gd_scene load_steps=12 format=3 uid="uid://dh2k3m8n4p6rv"]
 
 [ext_resource type="PackedScene" uid="uid://c7xk8m4q2hjlv" path="res://Scenes/Game/Cell.tscn" id="1_cell"]
 [ext_resource type="Script" path="res://Scripts/Game/SmallBoard.cs" id="2_script"]
@@ -17,6 +17,18 @@ albedo_color = Color(0.3, 0.8, 0.4, 1)
 emission_enabled = true
 emission = Color(0.2, 0.7, 0.3, 1)
 emission_energy_multiplier = 1.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x_winner"]
+albedo_color = Color(0.9, 0.3, 0.3, 1)
+emission_enabled = true
+emission = Color(0.8, 0.2, 0.2, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o_winner"]
+albedo_color = Color(0.3, 0.7, 0.9, 1)
+emission_enabled = true
+emission = Color(0.2, 0.5, 0.8, 1)
+emission_energy_multiplier = 2.0
 
 [sub_resource type="BoxMesh" id="BoxMesh_edge_horizontal"]
 size = Vector3(3.3, 0.06, 0.08)
@@ -62,6 +74,52 @@ surface_material_override/0 = SubResource("StandardMaterial3D_highlight")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65, 0.02, 0)
 mesh = SubResource("BoxMesh_edge_vertical")
 surface_material_override/0 = SubResource("StandardMaterial3D_highlight")
+
+[node name="XWinnerBorder" type="Node3D" parent="."]
+visible = false
+
+[node name="TopEdge" type="MeshInstance3D" parent="XWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -1.65)
+mesh = SubResource("BoxMesh_edge_horizontal")
+surface_material_override/0 = SubResource("StandardMaterial3D_x_winner")
+
+[node name="BottomEdge" type="MeshInstance3D" parent="XWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 1.65)
+mesh = SubResource("BoxMesh_edge_horizontal")
+surface_material_override/0 = SubResource("StandardMaterial3D_x_winner")
+
+[node name="LeftEdge" type="MeshInstance3D" parent="XWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.65, 0.02, 0)
+mesh = SubResource("BoxMesh_edge_vertical")
+surface_material_override/0 = SubResource("StandardMaterial3D_x_winner")
+
+[node name="RightEdge" type="MeshInstance3D" parent="XWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65, 0.02, 0)
+mesh = SubResource("BoxMesh_edge_vertical")
+surface_material_override/0 = SubResource("StandardMaterial3D_x_winner")
+
+[node name="OWinnerBorder" type="Node3D" parent="."]
+visible = false
+
+[node name="TopEdge" type="MeshInstance3D" parent="OWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -1.65)
+mesh = SubResource("BoxMesh_edge_horizontal")
+surface_material_override/0 = SubResource("StandardMaterial3D_o_winner")
+
+[node name="BottomEdge" type="MeshInstance3D" parent="OWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 1.65)
+mesh = SubResource("BoxMesh_edge_horizontal")
+surface_material_override/0 = SubResource("StandardMaterial3D_o_winner")
+
+[node name="LeftEdge" type="MeshInstance3D" parent="OWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.65, 0.02, 0)
+mesh = SubResource("BoxMesh_edge_vertical")
+surface_material_override/0 = SubResource("StandardMaterial3D_o_winner")
+
+[node name="RightEdge" type="MeshInstance3D" parent="OWinnerBorder"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65, 0.02, 0)
+mesh = SubResource("BoxMesh_edge_vertical")
+surface_material_override/0 = SubResource("StandardMaterial3D_o_winner")
 
 [node name="Cell_0_0" parent="." instance=ExtResource("1_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, -1)
