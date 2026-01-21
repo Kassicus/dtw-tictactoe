@@ -41,6 +41,26 @@ public partial class BoardController : Node3D
         HandleHover();
     }
 
+    public override void _Input(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton mouseButton)
+        {
+            if (mouseButton.ButtonIndex == MouseButton.Left && mouseButton.Pressed)
+            {
+                HandleClick();
+            }
+        }
+    }
+
+    private void HandleClick()
+    {
+        // If we have a hovered cell that isn't occupied, place a piece
+        if (_hoveredCell != null && !_hoveredCell.IsOccupied)
+        {
+            GameManager.Instance?.PlacePiece(_hoveredCell);
+        }
+    }
+
     private void HandleHover()
     {
         var mousePos = GetViewport().GetMousePosition();

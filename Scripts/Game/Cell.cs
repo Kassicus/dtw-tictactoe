@@ -13,6 +13,10 @@ public partial class Cell : Node3D
     // Reference to parent small board
     public SmallBoard ParentBoard { get; set; }
 
+    // Occupancy tracking
+    public bool IsOccupied { get; private set; }
+    public Player OccupiedBy { get; private set; } = Player.None;
+
     public override void _Ready()
     {
         _meshInstance = GetNode<MeshInstance3D>("Floor/MeshInstance3D");
@@ -40,5 +44,17 @@ public partial class Cell : Node3D
         if (!_isHighlighted) return;
         _isHighlighted = false;
         _meshInstance.SetSurfaceOverrideMaterial(0, _defaultMaterial);
+    }
+
+    public void SetOccupied(Player player)
+    {
+        IsOccupied = true;
+        OccupiedBy = player;
+    }
+
+    public void Reset()
+    {
+        IsOccupied = false;
+        OccupiedBy = Player.None;
     }
 }
