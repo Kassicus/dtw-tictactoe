@@ -57,4 +57,21 @@ public partial class Cell : Node3D
         IsOccupied = false;
         OccupiedBy = Player.None;
     }
+
+    /// <summary>
+    /// Restore the cell state from saved data (used when loading a game).
+    /// </summary>
+    public void RestoreState(Player player)
+    {
+        if (player != Player.None)
+        {
+            IsOccupied = true;
+            OccupiedBy = player;
+        }
+        else
+        {
+            IsOccupied = false;
+            OccupiedBy = Player.None;
+        }
+    }
 }

@@ -57,6 +57,9 @@ public partial class AudioManager : Node
         // Load saved volume settings
         LoadVolumeSettings();
 
+        // Load saved video settings (resolution)
+        LoadVideoSettings();
+
         // Auto-start music
         StartMusic();
     }
@@ -424,6 +427,49 @@ public partial class AudioManager : Node
             SetMasterVolume((float)(double)config.GetValue("audio", "master", 1.0));
             SetMusicVolume((float)(double)config.GetValue("audio", "music", 1.0));
             SetSFXVolume((float)(double)config.GetValue("audio", "sfx", 1.0));
+        }
+    }
+
+    private void LoadVideoSettings()
+    {
+        var config = new ConfigFile();
+        var err = config.Load("user://settings.cfg");
+
+        int resolutionIndex = 2; // Default to 1920x1080
+        if (err == Error.Ok)
+        {
+            resolutionIndex = (int)config.GetValue("video", "resolution", 2);
+        }
+
+        ApplyResolution(resolutionIndex);
+    }
+
+    /// <summary>
+    /// Apply the resolution setting. Can be called from anywhere to ensure consistent resolution.
+    /// </summary>
+    public static void ApplyResolution(int index)
+    {
+        switch (index)
+        {
+            case 0: // 1280x720
+                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+                DisplayServer.WindowSetSize(new Vector2I(1280, 720));
+                break;
+            case 1: // 1600x900
+                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+                DisplayServer.WindowSetSize(new Vector2I(1600, 900));
+                break;
+            case 2: // 1920x1080
+                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+                DisplayServer.WindowSetSize(new Vector2I(1920, 1080));
+                break;
+            case 3: // 2560x1440
+                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+                DisplayServer.WindowSetSize(new Vector2I(2560, 1440));
+                break;
+            case 4: // Fullscreen
+                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+                break;
         }
     }
 

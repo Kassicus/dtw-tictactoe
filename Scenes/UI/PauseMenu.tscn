@@ -47,6 +47,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Resume"
 
+[node name="SaveButton" type="Button" parent="Overlay/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Save Game"
+
 [node name="QuitButton" type="Button" parent="Overlay/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2

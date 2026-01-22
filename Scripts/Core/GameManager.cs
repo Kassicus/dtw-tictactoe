@@ -261,4 +261,118 @@ public partial class GameManager : Node
         GameWinner = Player.None;
         EmitSignal(SignalName.TurnChanged, (int)CurrentPlayer);
     }
+
+    /// <summary>
+    /// Try to load a saved game if pending load data exists.
+    /// Called by BoardController after initialization.
+    /// </summary>
+    public void TryLoadSavedGame()
+    {
+        var saveData = MainMenu.PendingLoadData;
+        if (saveData == null) return;
+
+        // Clear the pending data
+        MainMenu.PendingLoadData = null;
+
+        LoadFromSave(saveData);
+    }
+
+    private void LoadFromSave(GameSaveData saveData)
+    {
+        if (_boardController == null)
+        {
+            GD.PrintErr("GameManager: Cannot load save - BoardController is null");
+            return;
+        }
+
+        GD.Print("GameManager: Loading saved game...");
+
+        // Restore game state
+        CurrentPlayer = saveData.CurrentPlayer;
+        State = saveData.State;
+        GameWinner = saveData.GameWinner;
+
+        // Restore board state
+        for (int bx = 0; bx < 3; bx++)
+        {
+            for (int by = 0; by < 3; by++)
+            {
+                var board = _boardController.SmallBoards[bx, by];
+                int boardIndex = bx * 3 + by;
+
+                // Restore each cell
+                for (int cx = 0; cx < 3; cx++)
+                {
+                    for (int cy = 0; cy < 3; cy++)
+                    {
+                        var cell = board.Cells[cx, cy];
+                        int cellIndex = bx * 27 + by * 9 + cx * 3 + cy;
+                        var occupiedBy = saveData.CellOccupancy[cellIndex];
+
+                        cell.RestoreState(occupiedBy);
+
+                        // Spawn piece if cell is occupied
+                        if (occupiedBy != Player.None)
+                        {
+                            SpawnPieceStatic(cell, occupiedBy);
+                        }
+                    }
+                }
+
+                // Restore board winner
+                board.RestoreWinner(saveData.SmallBoardWinners[boardIndex]);
+            }
+        }
+
+        // Emit signal so UI updates
+        EmitSignal(SignalName.TurnChanged, (int)CurrentPlayer);
+
+        // If game was over, emit appropriate signal
+        if (State == GameState.GameOver)
+        {
+            if (GameWinner != Player.None)
+            {
+                EmitSignal(SignalName.GameWon, (int)GameWinner);
+            }
+            else
+            {
+                EmitSignal(SignalName.GameDraw);
+            }
+        }
+
+        GD.Print($"GameManager: Game loaded - {CurrentPlayer}'s turn, State: {State}");
+    }
+
+    /// <summary>
+    /// Spawn a piece at its final position (no falling animation).
+    /// Used when loading a saved game.
+    /// </summary>
+    private void SpawnPieceStatic(Cell cell, Player player)
+    {
+        var cellWorldPos = cell.GlobalPosition;
+
+        // Final position: just above the cell surface
+        var finalPos = new Vector3(cellWorldPos.X, cellWorldPos.Y + 0.1f, cellWorldPos.Z);
+
+        // Create the piece
+        GamePiece piece;
+        if (player == Player.X)
+        {
+            piece = _xPieceScene.Instantiate<GamePiece>();
+        }
+        else
+        {
+            piece = _oPieceScene.Instantiate<GamePiece>();
+        }
+
+        // Disable landing callback since we're restoring state
+        piece.PlayLandingSound = false;
+
+        // Add to scene and set position
+        GetTree().CurrentScene.AddChild(piece);
+        piece.GlobalPosition = finalPos;
+
+        // Freeze the piece so it doesn't move
+        piece.Freeze = true;
+    }
 }

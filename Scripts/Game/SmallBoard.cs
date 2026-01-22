@@ -142,4 +142,22 @@ public partial class SmallBoard : Node3D
             _oWinnerBorder.Visible = true;
         }
     }
+
+    /// <summary>
+    /// Restore the board winner state from saved data (used when loading a game).
+    /// </summary>
+    public void RestoreWinner(Player player)
+    {
+        if (player != Player.None)
+        {
+            SetWinner(player);
+        }
+        else
+        {
+            // Reset winner state
+            Winner = Player.None;
+            _xWinnerBorder.Visible = false;
+            _oWinnerBorder.Visible = false;
+        }
+    }
 }

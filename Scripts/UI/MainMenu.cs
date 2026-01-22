@@ -2,25 +2,40 @@ using Godot;
 
 public partial class MainMenu : Control
 {
+    // Static flag to signal that a saved game should be loaded
+    public static GameSaveData PendingLoadData { get; set; }
+
     private Button _playButton;
+    private Button _loadGameButton;
     private Button _settingsButton;
     private Button _quitButton;
     private Control _settingsPanel;
     private Control _mainPanel;
     private Control _gameModePanel;
+    private SubViewport _backgroundViewport;
 
     public override void _Ready()
     {
         _mainPanel = GetNode<Control>("MainPanel");
         _playButton = GetNode<Button>("MainPanel/VBoxContainer/PlayButton");
+        _loadGameButton = GetNode<Button>("MainPanel/VBoxContainer/LoadGameButton");
         _settingsButton = GetNode<Button>("MainPanel/VBoxContainer/SettingsButton");
         _quitButton = GetNode<Button>("MainPanel/VBoxContainer/QuitButton");
         _settingsPanel = GetNode<Control>("SettingsPanel");
         _gameModePanel = GetNode<Control>("GameModePanel");
+        _backgroundViewport = GetNode<SubViewport>("SubViewportContainer/SubViewport");
 
         _playButton.Pressed += OnPlayPressed;
+        _loadGameButton.Pressed += OnLoadGamePressed;
         _settingsButton.Pressed += OnSettingsPressed;
         _quitButton.Pressed += OnQuitPressed;
+
+        // Enable/disable load button based on save existence
+        UpdateLoadButtonState();
+
+        // Sync SubViewport size with window size
+        GetTree().Root.SizeChanged += OnWindowSizeChanged;
+        UpdateSubViewportSize();
 
         // Connect settings panel back button
         var backButton = _settingsPanel.GetNode<Button>("VBoxContainer/BackButton");
@@ -131,6 +146,42 @@ public partial class MainMenu : Control
         _mainPanel.Visible = true;
     }
 
+    private void OnLoadGamePressed()
+    {
+        var saveData = SaveManager.LoadGame();
+        if (saveData != null)
+        {
+            // Store the save data to be loaded by GameManager
+            PendingLoadData = saveData;
+            GameManager.CurrentGameMode = saveData.GameMode;
+            GetTree().ChangeSceneToFile("res://Scenes/Main.tscn");
+        }
+        else
+        {
+            // Update button to show error
+            _loadGameButton.Text = "No Save Found";
+            GetTree().CreateTimer(1.5f).Timeout += () =>
+            {
+                _loadGameButton.Text = "Load Game";
+                UpdateLoadButtonState();
+            };
+        }
+    }
+
+    private void UpdateLoadButtonState()
+    {
+        bool saveExists = SaveManager.SaveExists();
+        _loadGameButton.Disabled = !saveExists;
+        if (!saveExists)
+        {
+            _loadGameButton.Modulate = new Color(0.5f, 0.5f, 0.5f, 1f);
+        }
+        else
+        {
+            _loadGameButton.Modulate = new Color(1f, 1f, 1f, 1f);
+        }
+    }
+
     private void OnSettingsPressed()
     {
         _mainPanel.Visible = false;
@@ -156,27 +207,25 @@ public partial class MainMenu : Control
 
     private void ApplyResolution(int index)
     {
-        switch (index)
+        // Use shared implementation from AudioManager
+        AudioManager.ApplyResolution(index);
+
+        // Update SubViewport size after resolution change
+        // Use deferred call to ensure window size is updated first
+        CallDeferred(nameof(UpdateSubViewportSize));
+    }
+
+    private void OnWindowSizeChanged()
+    {
+        UpdateSubViewportSize();
+    }
+
+    private void UpdateSubViewportSize()
+    {
+        if (_backgroundViewport != null)
         {
-            case 0: // 1280x720
-                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-                DisplayServer.WindowSetSize(new Vector2I(1280, 720));
-                break;
-            case 1: // 1600x900
-                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-                DisplayServer.WindowSetSize(new Vector2I(1600, 900));
-                break;
-            case 2: // 1920x1080
-                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-                DisplayServer.WindowSetSize(new Vector2I(1920, 1080));
-                break;
-            case 3: // 2560x1440
-                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
-                DisplayServer.WindowSetSize(new Vector2I(2560, 1440));
-                break;
-            case 4: // Fullscreen
-                DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
-                break;
+            var windowSize = GetTree().Root.Size;
+            _backgroundViewport.Size = windowSize;
         }
     }
 

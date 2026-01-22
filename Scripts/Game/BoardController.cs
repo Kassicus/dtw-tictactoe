@@ -27,7 +27,16 @@ public partial class BoardController : Node3D
         if (!_isMenuBackground)
         {
             GameManager.Instance?.SetBoardController(this);
+
+            // Try to load saved game if there's pending load data
+            // Use CallDeferred to ensure all nodes are ready
+            CallDeferred(nameof(TryLoadSavedGame));
         }
+    }
+
+    private void TryLoadSavedGame()
+    {
+        GameManager.Instance?.TryLoadSavedGame();
     }
 
     private void InitializeBoards()
