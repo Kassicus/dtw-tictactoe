@@ -41,6 +41,7 @@ public partial class GameOverUI : CanvasLayer
         _winnerLabel.Text = winnerText;
         _winnerLabel.AddThemeColorOverride("font_color", winnerColor);
         _overlay.Visible = true;
+        _playAgainButton.GrabFocus();
     }
 
     private void OnGameDraw()
@@ -48,6 +49,7 @@ public partial class GameOverUI : CanvasLayer
         _winnerLabel.Text = "It's a Draw!";
         _winnerLabel.AddThemeColorOverride("font_color", new Color(0.8f, 0.8f, 0.8f));
         _overlay.Visible = true;
+        _playAgainButton.GrabFocus();
     }
 
     private void OnPlayAgainPressed()

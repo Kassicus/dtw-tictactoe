@@ -51,6 +51,7 @@ public partial class PauseMenu : CanvasLayer
     {
         _overlay.Visible = true;
         GetTree().Paused = true;
+        _resumeButton.GrabFocus();
     }
 
     private void Resume()

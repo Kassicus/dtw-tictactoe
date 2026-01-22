@@ -37,6 +37,9 @@ public partial class MainMenu : Control
         GetTree().Root.SizeChanged += OnWindowSizeChanged;
         UpdateSubViewportSize();
 
+        // Grab focus on the first button for controller support
+        _playButton.GrabFocus();
+
         // Connect settings panel back button
         var backButton = _settingsPanel.GetNode<Button>("VBoxContainer/BackButton");
         backButton.Pressed += OnSettingsBackPressed;
@@ -126,6 +129,10 @@ public partial class MainMenu : Control
     {
         _mainPanel.Visible = false;
         _gameModePanel.Visible = true;
+
+        // Grab focus on first game mode button
+        var pvpButton = _gameModePanel.GetNode<Button>("VBoxContainer/PlayerVsPlayerButton");
+        pvpButton.GrabFocus();
     }
 
     private void OnPlayerVsPlayerPressed()
@@ -144,6 +151,7 @@ public partial class MainMenu : Control
     {
         _gameModePanel.Visible = false;
         _mainPanel.Visible = true;
+        _playButton.GrabFocus();
     }
 
     private void OnLoadGamePressed()
@@ -186,6 +194,10 @@ public partial class MainMenu : Control
     {
         _mainPanel.Visible = false;
         _settingsPanel.Visible = true;
+
+        // Grab focus on back button in settings
+        var backButton = _settingsPanel.GetNode<Button>("VBoxContainer/BackButton");
+        backButton.GrabFocus();
     }
 
     private void OnSettingsBackPressed()
@@ -193,6 +205,7 @@ public partial class MainMenu : Control
         SaveSettings();
         _settingsPanel.Visible = false;
         _mainPanel.Visible = true;
+        _settingsButton.GrabFocus();
     }
 
     private void OnQuitPressed()

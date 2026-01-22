@@ -5,9 +5,17 @@ public partial class BoardController : Node3D
     private Camera3D _camera;
     private bool _isMenuBackground;
 
-    // Currently hovered elements
+    // Currently hovered elements (mouse mode)
     private Cell _hoveredCell;
     private SmallBoard _hoveredBoard;
+
+    // Controller selection state
+    private bool _usingController;
+    private int _selectedBoardX;
+    private int _selectedBoardY;
+    private int _selectedCellX;
+    private int _selectedCellY;
+    private Cell _controllerSelectedCell;
 
     // Array of small boards
     public SmallBoard[,] SmallBoards { get; private set; } = new SmallBoard[3, 3];
@@ -31,6 +39,12 @@ public partial class BoardController : Node3D
             // Try to load saved game if there's pending load data
             // Use CallDeferred to ensure all nodes are ready
             CallDeferred(nameof(TryLoadSavedGame));
+
+            // Initialize controller selection to center
+            _selectedBoardX = 1;
+            _selectedBoardY = 1;
+            _selectedCellX = 1;
+            _selectedCellY = 1;
         }
     }
 
@@ -58,18 +72,136 @@ public partial class BoardController : Node3D
     public override void _Process(double delta)
     {
         if (_isMenuBackground) return;
-        HandleHover();
+
+        // Only handle mouse hover when not using controller
+        if (!_usingController)
+        {
+            HandleHover();
+        }
     }
 
     public override void _Input(InputEvent @event)
     {
         if (_isMenuBackground) return;
-        if (@event is InputEventMouseButton mouseButton)
+
+        // Detect input type and switch modes
+        if (@event is InputEventMouseMotion || @event is InputEventMouseButton)
         {
-            if (mouseButton.ButtonIndex == MouseButton.Left && mouseButton.Pressed)
+            if (_usingController)
             {
-                HandleClick();
+                _usingController = false;
+                ClearControllerSelection();
             }
+
+            if (@event is InputEventMouseButton mouseButton)
+            {
+                if (mouseButton.ButtonIndex == MouseButton.Left && mouseButton.Pressed)
+                {
+                    HandleClick();
+                }
+            }
+            return;
+        }
+
+        // Controller/keyboard input
+        if (@event is InputEventJoypadButton || @event is InputEventJoypadMotion || @event is InputEventKey)
+        {
+            // Switch to controller mode
+            if (!_usingController)
+            {
+                _usingController = true;
+                ClearHover();
+                UpdateControllerSelection();
+            }
+
+            // Handle navigation
+            if (@event.IsActionPressed("ui_left"))
+            {
+                MoveSelection(-1, 0);
+                GetViewport().SetInputAsHandled();
+            }
+            else if (@event.IsActionPressed("ui_right"))
+            {
+                MoveSelection(1, 0);
+                GetViewport().SetInputAsHandled();
+            }
+            else if (@event.IsActionPressed("ui_up"))
+            {
+                MoveSelection(0, -1);
+                GetViewport().SetInputAsHandled();
+            }
+            else if (@event.IsActionPressed("ui_down"))
+            {
+                MoveSelection(0, 1);
+                GetViewport().SetInputAsHandled();
+            }
+            else if (@event.IsActionPressed("ui_accept"))
+            {
+                HandleControllerConfirm();
+                GetViewport().SetInputAsHandled();
+            }
+        }
+    }
+
+    private void MoveSelection(int dx, int dy)
+    {
+        // Calculate new cell position within the full 9x9 grid
+        int globalX = _selectedBoardX * 3 + _selectedCellX;
+        int globalY = _selectedBoardY * 3 + _selectedCellY;
+
+        globalX = Mathf.Clamp(globalX + dx, 0, 8);
+        globalY = Mathf.Clamp(globalY + dy, 0, 8);
+
+        // Convert back to board and cell coordinates
+        _selectedBoardX = globalX / 3;
+        _selectedBoardY = globalY / 3;
+        _selectedCellX = globalX % 3;
+        _selectedCellY = globalY % 3;
+
+        UpdateControllerSelection();
+    }
+
+    private void UpdateControllerSelection()
+    {
+        // Clear previous selection
+        _controllerSelectedCell?.Unhighlight();
+        _hoveredBoard?.Unhighlight();
+
+        // Get the new selected cell
+        var board = SmallBoards[_selectedBoardX, _selectedBoardY];
+        var cell = board.Cells[_selectedCellX, _selectedCellY];
+
+        // Update highlights
+        _hoveredBoard = board;
+        _controllerSelectedCell = cell;
+
+        board.Highlight();
+        if (!board.IsWon && !cell.IsOccupied)
+        {
+            cell.Highlight();
+        }
+    }
+
+    private void ClearControllerSelection()
+    {
+        _controllerSelectedCell?.Unhighlight();
+        _controllerSelectedCell = null;
+    }
+
+    private void HandleControllerConfirm()
+    {
+        // Block when it's CPU's turn in PvCPU mode
+        if (GameManager.CurrentGameMode == GameMode.PlayerVsCPU &&
+            GameManager.Instance?.CurrentPlayer == Player.O)
+        {
+            return;
+        }
+
+        if (_controllerSelectedCell != null &&
+            !_controllerSelectedCell.IsOccupied &&
+            !_controllerSelectedCell.ParentBoard.IsWon)
+        {
+            GameManager.Instance?.PlacePiece(_controllerSelectedCell);
         }
     }
 
