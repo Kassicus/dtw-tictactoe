@@ -110,6 +110,22 @@ public partial class GameManager : Node
 
     private void SpawnPiece(Cell cell)
     {
+        // Use cannon system if available
+        if (CannonController.Instance != null)
+        {
+            CannonController.Instance.FireAtCell(cell, CurrentPlayer, OnPieceLanded);
+            return;
+        }
+
+        // Fallback to direct spawn (legacy behavior)
+        SpawnPieceFalling(cell, CurrentPlayer, OnPieceLanded);
+    }
+
+    /// <summary>
+    /// Spawn a piece that falls from above (fallback when cannons unavailable).
+    /// </summary>
+    private void SpawnPieceFalling(Cell cell, Player player, System.Action onLanded)
+    {
         // Get the cell's world position
         var cellWorldPos = cell.GlobalPosition;
 
@@ -118,7 +134,7 @@ public partial class GameManager : Node
 
         // Create the piece
         GamePiece piece;
-        if (CurrentPlayer == Player.X)
+        if (player == Player.X)
         {
             piece = _xPieceScene.Instantiate<GamePiece>();
         }
@@ -128,7 +144,7 @@ public partial class GameManager : Node
         }
 
         // Set landing callback
-        piece.OnLanded = OnPieceLanded;
+        piece.OnLanded = onLanded;
 
         // Add to scene and set position
         GetTree().CurrentScene.AddChild(piece);

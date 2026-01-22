@@ -1,0 +1,74 @@
+[gd_scene load_steps=7 format=3 uid="uid://cannon_scene_001"]
+
+[ext_resource type="Script" path="res://Scripts/Game/Cannon.cs" id="1_script"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+top_radius = 1.2
+bottom_radius = 1.5
+height = 1.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cannon"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+metallic = 0.6
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_barrel"]
+top_radius = 0.6
+bottom_radius = 0.8
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flash"]
+shading_mode = 0
+albedo_color = Color(1, 0.8, 0.4, 1)
+emission_enabled = true
+emission = Color(1, 0.7, 0.3, 1)
+emission_energy_multiplier = 5.0
+billboard_mode = 3
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_flash"]
+emission_shape = 1
+emission_sphere_radius = 0.2
+direction = Vector3(0, 0, -1)
+spread = 25.0
+initial_velocity_min = 8.0
+initial_velocity_max = 15.0
+gravity = Vector3(0, -2, 0)
+scale_min = 0.5
+scale_max = 1.2
+color = Color(1, 0.8, 0.3, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_particle"]
+radius = 0.2
+height = 0.4
+material = SubResource("StandardMaterial3D_flash")
+
+[node name="Cannon" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Base" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = SubResource("CylinderMesh_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -1.5)
+mesh = SubResource("CylinderMesh_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.2)
+
+[node name="MuzzleFlash" type="GpuParticles3D" parent="Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3.2)
+emitting = false
+amount = 20
+one_shot = true
+explosiveness = 0.9
+lifetime = 0.4
+fixed_fps = 60
+visibility_aabb = AABB(-5, -5, -5, 10, 10, 10)
+process_material = SubResource("ParticleProcessMaterial_flash")
+draw_pass_1 = SubResource("SphereMesh_particle")

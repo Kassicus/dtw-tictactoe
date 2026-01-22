@@ -268,6 +268,19 @@ public partial class AudioManager : Node
         }
     }
 
+    public void PlayCannonFire()
+    {
+        // Try group first, fall back to single file
+        if (_sfxGroups.ContainsKey("CannonFire"))
+        {
+            PlaySFXGroup("CannonFire", 0.15f);
+        }
+        else if (_sfx.ContainsKey("cannon_fire"))
+        {
+            PlaySFX("cannon_fire", 0.15f);
+        }
+    }
+
     private void Shuffle()
     {
         _shuffledIndices.Clear();

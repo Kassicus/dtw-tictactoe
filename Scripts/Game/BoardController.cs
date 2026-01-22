@@ -197,6 +197,12 @@ public partial class BoardController : Node3D
             return;
         }
 
+        // Block during camera transitions
+        if (GameCamera.Instance?.IsTransitioning == true)
+        {
+            return;
+        }
+
         if (_controllerSelectedCell != null &&
             !_controllerSelectedCell.IsOccupied &&
             !_controllerSelectedCell.ParentBoard.IsWon)
@@ -210,6 +216,12 @@ public partial class BoardController : Node3D
         // Block clicks when it's CPU's turn in PvCPU mode
         if (GameManager.CurrentGameMode == GameMode.PlayerVsCPU &&
             GameManager.Instance?.CurrentPlayer == Player.O)
+        {
+            return;
+        }
+
+        // Block during camera transitions
+        if (GameCamera.Instance?.IsTransitioning == true)
         {
             return;
         }

@@ -8,7 +8,7 @@ public partial class GamePiece : RigidBody3D
 
     private bool _hasLanded = false;
     private float _timeSinceSpawn = 0f;
-    private const float MinTimeBeforeLanding = 0.5f;
+    private const float MinTimeBeforeLanding = 1.5f;
     private const float VelocityThreshold = 0.5f;
 
     public Action OnLanded { get; set; }
