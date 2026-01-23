@@ -123,14 +123,15 @@ public partial class GameManager : Node
 
     /// <summary>
     /// Spawn a piece that falls from above (fallback when cannons unavailable).
+    /// Uses guided flight to guarantee accurate landing.
     /// </summary>
     private void SpawnPieceFalling(Cell cell, Player player, System.Action onLanded)
     {
         // Get the cell's world position
         var cellWorldPos = cell.GlobalPosition;
 
-        // Spawn position: just above the camera so pieces appear quickly
-        var spawnPos = new Vector3(cellWorldPos.X, 22f, cellWorldPos.Z);
+        // Spawn position: above the cell
+        var spawnPos = new Vector3(cellWorldPos.X, 15f, cellWorldPos.Z);
 
         // Create the piece
         GamePiece piece;
@@ -143,15 +144,15 @@ public partial class GameManager : Node
             piece = _oPieceScene.Instantiate<GamePiece>();
         }
 
-        // Set landing callback
+        // Set landing callback and target cell
         piece.OnLanded = onLanded;
+        piece.TargetCell = cell;
 
-        // Add to scene and set position
+        // Add to scene
         GetTree().CurrentScene.AddChild(piece);
-        piece.GlobalPosition = spawnPos;
 
-        // Give initial downward velocity so pieces fall faster
-        piece.LinearVelocity = new Vector3(0, -15f, 0);
+        // Use guided flight - falls straight down with small arc
+        piece.StartGuidedFlight(spawnPos, cellWorldPos, 2f, 0.8f);
 
         // Add slight random rotation for visual interest
         piece.RotateY((float)GD.RandRange(-0.3, 0.3));
