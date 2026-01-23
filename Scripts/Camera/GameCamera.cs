@@ -167,16 +167,18 @@ public partial class GameCamera : Camera3D
 
     private Vector3 CalculateCameraPosition(Cannon cannon)
     {
-        // Get cannon position and direction toward board center
+        // Get cannon position but center X to 0 (center of cannon row)
         var cannonPos = cannon.GlobalPosition;
+        cannonPos.X = 0; // Center camera on the row of cannons, not individual cannon
+
         var directionToCenter = (Vector3.Zero - cannonPos);
         directionToCenter.Y = 0; // Keep horizontal
         directionToCenter = directionToCenter.Normalized();
 
-        // Camera is positioned behind the cannon (opposite of direction to center)
+        // Camera is positioned behind the cannon row (opposite of direction to center)
         // and elevated above
         var cameraPos = cannonPos - directionToCenter * DistanceBehind;
-        cameraPos.Y = cannonPos.Y + HeightAbove;
+        cameraPos.Y = cannon.GlobalPosition.Y + HeightAbove;
 
         return cameraPos;
     }

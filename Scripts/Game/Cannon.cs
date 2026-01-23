@@ -10,6 +10,10 @@ public partial class Cannon : Node3D
     private GpuParticles3D _muzzleFlash;
     private GpuParticles3D _smoke;
 
+    // Shared haze material and mesh (created once, reused)
+    private static StandardMaterial3D _hazeMaterial;
+    private static QuadMesh _hazeMesh;
+
     private const float RecoilDistance = 0.5f;
     private const float RecoilDuration = 0.15f;
 
@@ -100,9 +104,10 @@ public partial class Cannon : Node3D
         _smoke.Emitting = false;
         _smoke.Amount = 100;  // More particles to fill plume from barrel to end
         _smoke.OneShot = true;
-        _smoke.Explosiveness = 0.85f;  // Most particles emit at once, slight spread for fuller plume
+        _smoke.Explosiveness = 0.95f;  // Big burst all at once, tiny trickle after
         _smoke.Lifetime = 3.5;  // Longer lifetime for slower dissipation
-        _smoke.VisibilityAabb = new Aabb(new Vector3(-15, -5, -30), new Vector3(30, 25, 60));  // Extended for longer plume
+        _smoke.Randomness = 0.5f;  // 50% randomness in lifetime - creates size variation
+        _smoke.VisibilityAabb = new Aabb(new Vector3(-15, -5, -20), new Vector3(30, 35, 40));  // Taller for rising smoke
 
         // Create process material for black powder plume
         var processMat = new ParticleProcessMaterial();
@@ -111,62 +116,67 @@ public partial class Cannon : Node3D
         processMat.EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Box;
         processMat.EmissionBoxExtents = new Vector3(0.3f, 0.3f, 0.8f);  // Elongated along Z (barrel axis)
 
-        // Direction straight out of barrel with very tight initial spread
+        // Direction straight out of barrel with more spread for separation
         processMat.Direction = new Vector3(0, 0, -1);
-        processMat.Spread = 10f;  // Tight initial spread - stays columnar out of barrel
+        processMat.Spread = 18f;  // More spread for particle separation
 
-        // Wide velocity range - some particles stay near barrel, some travel out
-        processMat.InitialVelocityMin = 4f;   // Some smoke lingers near muzzle
-        processMat.InitialVelocityMax = 18f;  // Some travels out further
+        // Shorter throw - burst stays closer to barrel
+        processMat.InitialVelocityMin = 3f;   // Some smoke lingers at muzzle
+        processMat.InitialVelocityMax = 10f;  // Reduced max for shorter throw
 
-        // Gravity pulls smoke up slightly (hot gas rises)
-        processMat.Gravity = new Vector3(0.15f, 1.0f, 0);
+        // Strong upward gravity - smoke rises continuously as it fades
+        // Damping will slow horizontal movement but gravity keeps Y moving
+        processMat.Gravity = new Vector3(0.05f, 2.5f, 0);
 
-        // Moderate damping - slows particles but doesn't stop them immediately
-        processMat.DampingMin = 2.5f;
-        processMat.DampingMax = 5f;
+        // High damping stops horizontal throw quickly, but gravity overcomes it vertically
+        processMat.DampingMin = 5f;
+        processMat.DampingMax = 8f;
 
-        // Base scale - will be multiplied by curve
-        processMat.ScaleMin = 1.5f;
-        processMat.ScaleMax = 3f;
+        // Base scale - wide range for variation in final sizes (1.3 to 5.0)
+        processMat.ScaleMin = 1.3f;
+        processMat.ScaleMax = 5f;
 
-        // Scale over lifetime - stays tight while traveling, then spreads as it slows
+        // Scale over lifetime - starts small, spreads earlier since throw is shorter
+        // Curve goes 0 to 1, multiplied by ScaleMin/ScaleMax for final size variation
         var scaleCurve = new Curve();
-        scaleCurve.AddPoint(new Vector2(0, 0.15f));     // Starts very small and tight
-        scaleCurve.AddPoint(new Vector2(0.2f, 0.2f));   // Stays tight as it shoots out
-        scaleCurve.AddPoint(new Vector2(0.35f, 0.35f)); // Still relatively tight mid-flight
-        scaleCurve.AddPoint(new Vector2(0.5f, 0.6f));   // Starts spreading as it slows
-        scaleCurve.AddPoint(new Vector2(0.7f, 0.9f));   // Expanding more
-        scaleCurve.AddPoint(new Vector2(0.85f, 1.1f));  // Nearly full spread
-        scaleCurve.AddPoint(new Vector2(1f, 1.3f));     // Maximum spread as it dissipates
+        scaleCurve.AddPoint(new Vector2(0, 0.1f));      // Starts very small and tight
+        scaleCurve.AddPoint(new Vector2(0.08f, 0.15f)); // Brief tight burst
+        scaleCurve.AddPoint(new Vector2(0.18f, 0.25f)); // Starts spreading as it slows
+        scaleCurve.AddPoint(new Vector2(0.3f, 0.4f));   // Expanding
+        scaleCurve.AddPoint(new Vector2(0.45f, 0.55f)); // Growing
+        scaleCurve.AddPoint(new Vector2(0.6f, 0.7f));   // More growth
+        scaleCurve.AddPoint(new Vector2(0.8f, 0.88f));  // Still growing
+        scaleCurve.AddPoint(new Vector2(1f, 1.0f));     // Full size at death - varies per particle
         var scaleCurveTex = new CurveTexture();
         scaleCurveTex.Curve = scaleCurve;
         processMat.ScaleCurve = scaleCurveTex;
 
-        // Velocity over lifetime - stays fast longer, then slows dramatically
+        // Velocity over lifetime - decelerates horizontal, gravity handles vertical rise
         var velocityCurve = new Curve();
         velocityCurve.AddPoint(new Vector2(0, 1f));
-        velocityCurve.AddPoint(new Vector2(0.25f, 0.75f));  // Maintains speed longer
-        velocityCurve.AddPoint(new Vector2(0.45f, 0.4f));   // Then slows
-        velocityCurve.AddPoint(new Vector2(0.7f, 0.15f));   // Mostly stopped
-        velocityCurve.AddPoint(new Vector2(1f, 0.02f));     // Drifting
+        velocityCurve.AddPoint(new Vector2(0.12f, 0.4f));  // Quick initial slowdown
+        velocityCurve.AddPoint(new Vector2(0.3f, 0.15f));  // Mostly stopped horizontally
+        velocityCurve.AddPoint(new Vector2(0.6f, 0.05f));  // Drifting, gravity takes over
+        velocityCurve.AddPoint(new Vector2(1f, 0.02f));    // Nearly still horizontally
         var velocityCurveTex = new CurveTexture();
         velocityCurveTex.Curve = velocityCurve;
         processMat.LinearAccelCurve = velocityCurveTex;
-        processMat.LinearAccelMin = -6f;  // Slightly less deceleration
-        processMat.LinearAccelMax = -3f;
+        processMat.LinearAccelMin = -8f;   // Strong horizontal deceleration
+        processMat.LinearAccelMax = -4f;
 
         // Color gradient - black powder smoke: starts bright/tan from the flash,
-        // becomes gray, then darker as it cools, fades slowly
+        // continuously fades throughout lifetime as it grows and dissipates
         var gradient = new Gradient();
-        gradient.Offsets = new float[] { 0f, 0.08f, 0.25f, 0.5f, 0.75f, 1f };
+        gradient.Offsets = new float[] { 0f, 0.05f, 0.15f, 0.3f, 0.5f, 0.7f, 0.85f, 1f };
         gradient.Colors = new Color[] {
-            new Color(1.0f, 0.95f, 0.8f, 0.95f),   // Bright tan/white from muzzle flash
-            new Color(0.85f, 0.82f, 0.75f, 0.9f),  // Warm gray
-            new Color(0.65f, 0.63f, 0.6f, 0.8f),   // Medium gray
-            new Color(0.5f, 0.48f, 0.46f, 0.6f),   // Darker gray
-            new Color(0.4f, 0.4f, 0.4f, 0.35f),    // Dark gray, fading
-            new Color(0.35f, 0.35f, 0.35f, 0f)     // Fade to transparent
+            new Color(1.0f, 0.95f, 0.8f, 0.9f),    // Bright tan/white from muzzle flash
+            new Color(0.9f, 0.87f, 0.8f, 0.85f),   // Still bright, starting to fade
+            new Color(0.75f, 0.73f, 0.68f, 0.75f), // Warm gray, fading
+            new Color(0.6f, 0.58f, 0.55f, 0.6f),   // Medium gray, continuing fade
+            new Color(0.5f, 0.48f, 0.46f, 0.45f),  // Darker gray, more transparent
+            new Color(0.42f, 0.42f, 0.4f, 0.3f),   // Dark gray, quite faded
+            new Color(0.38f, 0.38f, 0.38f, 0.15f), // Very faded
+            new Color(0.35f, 0.35f, 0.35f, 0f)     // Gone
         };
         var gradientTex = new GradientTexture1D();
         gradientTex.Gradient = gradient;
@@ -178,13 +188,13 @@ public partial class Cannon : Node3D
         processMat.TurbulenceNoiseScale = 3f;      // Larger scale noise for bigger billows
         processMat.TurbulenceNoiseSpeed = new Vector3(1f, 0.6f, 1f);
 
-        // Turbulence influence increases over lifetime (affects how much turbulence applies)
+        // Turbulence influence - kicks in earlier since particles stop sooner
         var turbulenceInfluenceCurve = new Curve();
-        turbulenceInfluenceCurve.AddPoint(new Vector2(0, 0.1f));    // Very little turbulence at start
-        turbulenceInfluenceCurve.AddPoint(new Vector2(0.3f, 0.25f)); // Still minimal during travel
-        turbulenceInfluenceCurve.AddPoint(new Vector2(0.5f, 0.5f));  // Starts kicking in
-        turbulenceInfluenceCurve.AddPoint(new Vector2(0.7f, 0.8f));  // Strong turbulence
-        turbulenceInfluenceCurve.AddPoint(new Vector2(1f, 1f));      // Full turbulence at end
+        turbulenceInfluenceCurve.AddPoint(new Vector2(0, 0.15f));   // Slight turbulence at start
+        turbulenceInfluenceCurve.AddPoint(new Vector2(0.15f, 0.35f)); // Builds quickly
+        turbulenceInfluenceCurve.AddPoint(new Vector2(0.3f, 0.6f));  // Strong as particles slow
+        turbulenceInfluenceCurve.AddPoint(new Vector2(0.5f, 0.8f));  // Near full
+        turbulenceInfluenceCurve.AddPoint(new Vector2(1f, 1f));      // Full turbulence
         var turbulenceInfluenceTex = new CurveTexture();
         turbulenceInfluenceTex.Curve = turbulenceInfluenceCurve;
         processMat.TurbulenceInfluenceOverLife = turbulenceInfluenceTex;
@@ -369,6 +379,116 @@ public partial class Cannon : Node3D
             _smoke.Restart();
             _smoke.Emitting = true;
         }
+
+        // Spawn lingering battlefield haze
+        SpawnLingeringHaze();
+    }
+
+    /// <summary>
+    /// Spawns a separate particle system for lingering battlefield haze that rises slowly.
+    /// This creates the accumulating smoke effect during battle.
+    /// </summary>
+    private void SpawnLingeringHaze()
+    {
+        // Create shared material/mesh if not yet created
+        if (_hazeMaterial == null)
+        {
+            _hazeMaterial = new StandardMaterial3D();
+            _hazeMaterial.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+            _hazeMaterial.ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded;
+            _hazeMaterial.VertexColorUseAsAlbedo = true;
+            _hazeMaterial.BillboardMode = BaseMaterial3D.BillboardModeEnum.Particles;
+            _hazeMaterial.AlbedoTexture = CreateSoftCircleTexture();
+        }
+
+        if (_hazeMesh == null)
+        {
+            _hazeMesh = new QuadMesh();
+            _hazeMesh.Size = new Vector2(4f, 4f);
+            _hazeMesh.Material = _hazeMaterial;
+        }
+
+        // Create the haze particle system (spawned in world space, not attached to barrel)
+        var haze = new GpuParticles3D();
+        haze.Name = "LingeringHaze";
+        haze.Amount = 15;  // Small amount per shot
+        haze.OneShot = true;
+        haze.Explosiveness = 0.7f;  // Most emit together
+        haze.Lifetime = 60f;  // Very long lifetime - lingers in the air
+        haze.Randomness = 0.4f;
+        haze.VisibilityAabb = new Aabb(new Vector3(-20, -5, -20), new Vector3(40, 50, 40));
+
+        // Process material for slow-rising haze
+        var processMat = new ParticleProcessMaterial();
+        processMat.EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere;
+        processMat.EmissionSphereRadius = 1.5f;  // Spread out emission
+
+        // Slight outward push, mostly rises
+        processMat.Direction = new Vector3(0, 1, 0);
+        processMat.Spread = 30f;
+        processMat.InitialVelocityMin = 0.3f;
+        processMat.InitialVelocityMax = 0.8f;
+
+        // Constant slow rise - smoke drifts upward throughout lifetime
+        processMat.Gravity = new Vector3(0, 0.6f, 0);
+
+        // Very light damping - keeps drifting
+        processMat.DampingMin = 0.2f;
+        processMat.DampingMax = 0.5f;
+
+        // Large, wispy particles
+        processMat.ScaleMin = 3f;
+        processMat.ScaleMax = 7f;
+
+        // Grow slightly over lifetime
+        var scaleCurve = new Curve();
+        scaleCurve.AddPoint(new Vector2(0, 0.4f));
+        scaleCurve.AddPoint(new Vector2(0.3f, 0.7f));
+        scaleCurve.AddPoint(new Vector2(0.7f, 0.9f));
+        scaleCurve.AddPoint(new Vector2(1f, 1f));
+        var scaleCurveTex = new CurveTexture();
+        scaleCurveTex.Curve = scaleCurve;
+        processMat.ScaleCurve = scaleCurveTex;
+
+        // Very faint, slowly fading - this is the haze that accumulates
+        var gradient = new Gradient();
+        gradient.Offsets = new float[] { 0f, 0.1f, 0.6f, 1f };
+        gradient.Colors = new Color[] {
+            new Color(0.5f, 0.5f, 0.48f, 0.12f),  // Starts faint
+            new Color(0.45f, 0.45f, 0.43f, 0.1f), // Slight fade
+            new Color(0.4f, 0.4f, 0.4f, 0.06f),   // Fading
+            new Color(0.38f, 0.38f, 0.38f, 0f)    // Gone
+        };
+        var gradientTex = new GradientTexture1D();
+        gradientTex.Gradient = gradient;
+        processMat.ColorRamp = gradientTex;
+
+        // Light turbulence for gentle drift
+        processMat.TurbulenceEnabled = true;
+        processMat.TurbulenceNoiseStrength = 1.5f;
+        processMat.TurbulenceNoiseScale = 4f;
+        processMat.TurbulenceNoiseSpeed = new Vector3(0.3f, 0.2f, 0.3f);
+
+        haze.ProcessMaterial = processMat;
+        haze.DrawPass1 = _hazeMesh;
+
+        // Position at muzzle world position (not attached to barrel)
+        haze.GlobalPosition = _muzzlePoint.GlobalPosition;
+
+        // Add to scene root so it persists independently
+        GetTree().CurrentScene.AddChild(haze);
+
+        // Start emitting
+        haze.Emitting = true;
+
+        // Auto-remove after particles are done (lifetime + buffer)
+        var timer = GetTree().CreateTimer(62f);
+        timer.Timeout += () => {
+            if (IsInstanceValid(haze))
+            {
+                haze.QueueFree();
+            }
+        };
     }
 
     private void PlayFireSound()

@@ -5,11 +5,16 @@ public partial class CannonController : Node3D
 {
     public static CannonController Instance { get; private set; }
 
-    [Export] public Cannon CannonX { get; set; }
-    [Export] public Cannon CannonO { get; set; }
+    // Arrays of cannons for each player (3 per side)
+    [Export] public Cannon[] CannonsX { get; set; } = new Cannon[3];
+    [Export] public Cannon[] CannonsO { get; set; } = new Cannon[3];
 
     private PackedScene _xPieceScene;
     private PackedScene _oPieceScene;
+
+    // Track which cannon fires next for each player
+    private int _nextCannonIndexX = 0;
+    private int _nextCannonIndexO = 0;
 
     public override void _Ready()
     {
@@ -20,16 +25,21 @@ public partial class CannonController : Node3D
         _oPieceScene = GD.Load<PackedScene>("res://Scenes/Pieces/OPiece.tscn");
 
         // Get cannon references if not set via export
-        CannonX ??= GetNodeOrNull<Cannon>("CannonX");
-        CannonO ??= GetNodeOrNull<Cannon>("CannonO");
+        CannonsX[0] ??= GetNodeOrNull<Cannon>("CannonX1");
+        CannonsX[1] ??= GetNodeOrNull<Cannon>("CannonX2");
+        CannonsX[2] ??= GetNodeOrNull<Cannon>("CannonX3");
+
+        CannonsO[0] ??= GetNodeOrNull<Cannon>("CannonO1");
+        CannonsO[1] ??= GetNodeOrNull<Cannon>("CannonO2");
+        CannonsO[2] ??= GetNodeOrNull<Cannon>("CannonO3");
     }
 
     /// <summary>
-    /// Fire a piece at the specified cell from the correct cannon.
+    /// Fire a piece at the specified cell from the next cannon in rotation.
     /// </summary>
     public void FireAtCell(Cell cell, Player player, Action onLanded)
     {
-        var cannon = GetCannonForPlayer(player);
+        var cannon = GetNextCannonForPlayer(player);
         var pieceScene = GetPieceSceneForPlayer(player);
 
         if (cannon == null || pieceScene == null)
@@ -41,14 +51,21 @@ public partial class CannonController : Node3D
         cannon.Fire(cell, pieceScene, onLanded);
     }
 
-    private Cannon GetCannonForPlayer(Player player)
+    private Cannon GetNextCannonForPlayer(Player player)
     {
-        return player switch
+        if (player == Player.X)
         {
-            Player.X => CannonX,
-            Player.O => CannonO,
-            _ => null
-        };
+            var cannon = CannonsX[_nextCannonIndexX];
+            _nextCannonIndexX = (_nextCannonIndexX + 1) % CannonsX.Length;
+            return cannon;
+        }
+        else if (player == Player.O)
+        {
+            var cannon = CannonsO[_nextCannonIndexO];
+            _nextCannonIndexO = (_nextCannonIndexO + 1) % CannonsO.Length;
+            return cannon;
+        }
+        return null;
     }
 
     private PackedScene GetPieceSceneForPlayer(Player player)
@@ -62,10 +79,15 @@ public partial class CannonController : Node3D
     }
 
     /// <summary>
-    /// Get the active cannon for the current player.
+    /// Get the active cannon for the current player (returns next in rotation without advancing).
     /// </summary>
     public Cannon GetActiveCannonForPlayer(Player player)
     {
-        return GetCannonForPlayer(player);
+        return player switch
+        {
+            Player.X => CannonsX[_nextCannonIndexX],
+            Player.O => CannonsO[_nextCannonIndexO],
+            _ => null
+        };
     }
 }

@@ -40,12 +40,28 @@ light_energy = 0.7
 [node name="CannonController" type="Node3D" parent="."]
 script = ExtResource("5_cannoncontroller")
 
-[node name="CannonX" parent="CannonController" instance=ExtResource("6_cannon")]
+[node name="CannonX1" parent="CannonController" instance=ExtResource("6_cannon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, 18)
+OwnerPlayer = 1
+
+[node name="CannonX2" parent="CannonController" instance=ExtResource("6_cannon")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 18)
 OwnerPlayer = 1
 
-[node name="CannonO" parent="CannonController" instance=ExtResource("6_cannon")]
+[node name="CannonX3" parent="CannonController" instance=ExtResource("6_cannon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3, 18)
+OwnerPlayer = 1
+
+[node name="CannonO1" parent="CannonController" instance=ExtResource("6_cannon")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -6, 3, -18)
+OwnerPlayer = 2
+
+[node name="CannonO2" parent="CannonController" instance=ExtResource("6_cannon")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 3, -18)
+OwnerPlayer = 2
+
+[node name="CannonO3" parent="CannonController" instance=ExtResource("6_cannon")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 6, 3, -18)
 OwnerPlayer = 2
 
 [node name="GameOverUI" parent="." instance=ExtResource("2_gameoverui")]
