@@ -472,11 +472,11 @@ public partial class Cannon : Node3D
         haze.ProcessMaterial = processMat;
         haze.DrawPass1 = _hazeMesh;
 
-        // Position at muzzle world position (not attached to barrel)
-        haze.GlobalPosition = _muzzlePoint.GlobalPosition;
-
         // Add to scene root so it persists independently
         GetTree().CurrentScene.AddChild(haze);
+
+        // Position at muzzle world position (must be after AddChild for GlobalPosition to work)
+        haze.GlobalPosition = _muzzlePoint.GlobalPosition;
 
         // Start emitting
         haze.Emitting = true;
