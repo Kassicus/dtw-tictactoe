@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://hull_section_001"]
+
+[ext_resource type="Script" path="res://Scripts/Ship/HullSection.cs" id="1_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_hull"]
+size = Vector3(3, 2, 4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood"]
+albedo_color = Color(0.55, 0.35, 0.2, 1)
+roughness = 0.8
+
+[node name="HullSection" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_hull")
+surface_material_override/0 = SubResource("StandardMaterial3D_wood")
+
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]

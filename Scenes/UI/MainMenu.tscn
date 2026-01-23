@@ -1,10 +1,10 @@
 [gd_scene load_steps=8 format=3 uid="uid://cm4n6p8r0t2xv"]
 
-[ext_resource type="Script" path="res://Scripts/UI/MainMenu.cs" id="1_mainmenu"]
-[ext_resource type="PackedScene" uid="uid://bf3k5n7p9r2tv" path="res://Scenes/Game/GameBoard.tscn" id="2_gameboard"]
-[ext_resource type="Script" path="res://Scripts/UI/MenuPieceSpawner.cs" id="3_spawner"]
-[ext_resource type="Shader" path="res://Resources/Shaders/blur.gdshader" id="4_blur"]
-[ext_resource type="Script" path="res://Scripts/UI/OrbitingCamera.cs" id="5_orbitcam"]
+[ext_resource type="Script" uid="uid://n8r3durqw0bt" path="res://Scripts/UI/MainMenu.cs" id="1_mainmenu"]
+[ext_resource type="PackedScene" uid="uid://bf3k5n7qar2tv" path="res://Scenes/Game/GameBoard.tscn" id="2_gameboard"]
+[ext_resource type="Script" uid="uid://ix50b46mx4np" path="res://Scripts/UI/MenuPieceSpawner.cs" id="3_spawner"]
+[ext_resource type="Shader" uid="uid://cmwr4afguv2b8" path="res://Resources/Shaders/blur.gdshader" id="4_blur"]
+[ext_resource type="Script" uid="uid://bmoonfk6bioql" path="res://Scripts/UI/OrbitingCamera.cs" id="5_orbitcam"]
 
 [sub_resource type="Environment" id="Environment_menu"]
 background_mode = 1
@@ -37,7 +37,7 @@ stretch = true
 
 [node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
 handle_input_locally = false
-size = Vector2i(1920, 1080)
+size = Vector2i(1152, 648)
 render_target_update_mode = 4
 
 [node name="World" type="Node3D" parent="SubViewportContainer/SubViewport"]
@@ -66,13 +66,13 @@ light_energy = 0.7
 script = ExtResource("3_spawner")
 
 [node name="BlurOverlay" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_blur")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-material = SubResource("ShaderMaterial_blur")
 color = Color(1, 1, 1, 0)
 
 [node name="MainPanel" type="MarginContainer" parent="."]
@@ -93,7 +93,6 @@ theme_override_constants/separation = 20
 layout_mode = 2
 theme_override_font_sizes/font_size = 64
 text = "Super Tic-Tac-Toe"
-horizontal_alignment = 0
 
 [node name="Spacer" type="Control" parent="MainPanel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
@@ -274,3 +273,5 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 24
 text = "Back"
+
+[node name="Node" type="Node" parent="."]

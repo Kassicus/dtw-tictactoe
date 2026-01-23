@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3 uid="uid://ship_cannon_001"]
+
+[ext_resource type="Script" path="res://Scripts/Ship/ShipCannon.cs" id="1_script"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+top_radius = 0.4
+bottom_radius = 0.5
+height = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cannon"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+metallic = 0.8
+roughness = 0.4
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_barrel"]
+top_radius = 0.2
+bottom_radius = 0.25
+height = 1.8
+
+[node name="ShipCannon" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Base" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+mesh = SubResource("CylinderMesh_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.9)
+mesh = SubResource("CylinderMesh_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)

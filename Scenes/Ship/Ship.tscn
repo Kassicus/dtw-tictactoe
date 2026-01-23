@@ -1,0 +1,290 @@
+[gd_scene load_steps=12 format=3 uid="uid://ship_main_001"]
+
+[ext_resource type="Script" path="res://Scripts/Ship/Ship.cs" id="1_script"]
+[ext_resource type="Script" path="res://Scripts/Ship/HullSection.cs" id="2_hull_script"]
+[ext_resource type="Script" path="res://Scripts/Ship/Mast.cs" id="3_mast_script"]
+[ext_resource type="Script" path="res://Scripts/Ship/ShipCannon.cs" id="4_cannon_script"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_deck"]
+size = Vector3(6, 0.3, 16)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_deck_wood"]
+albedo_color = Color(0.6, 0.4, 0.25, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_hull"]
+size = Vector3(6, 3, 16)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hull_wood"]
+albedo_color = Color(0.55, 0.35, 0.2, 1)
+roughness = 0.8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_mast"]
+top_radius = 0.15
+bottom_radius = 0.3
+height = 12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mast_wood"]
+albedo_color = Color(0.45, 0.3, 0.15, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_sail"]
+size = Vector3(5, 7, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_canvas"]
+albedo_color = Color(0.9, 0.85, 0.75, 1)
+roughness = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cannon_base"]
+top_radius = 0.35
+bottom_radius = 0.4
+height = 0.35
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cannon"]
+albedo_color = Color(0.25, 0.25, 0.28, 1)
+metallic = 0.85
+roughness = 0.35
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cannon_barrel"]
+top_radius = 0.15
+bottom_radius = 0.2
+height = 1.5
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hull_collision"]
+size = Vector3(6, 3, 16)
+
+[node name="Ship" type="Node3D"]
+script = ExtResource("1_script")
+ShipName = "HMS Victory"
+
+[node name="HullVisual" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, 0)
+mesh = SubResource("BoxMesh_hull")
+surface_material_override/0 = SubResource("StandardMaterial3D_hull_wood")
+
+[node name="DeckVisual" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+mesh = SubResource("BoxMesh_deck")
+surface_material_override/0 = SubResource("StandardMaterial3D_deck_wood")
+
+[node name="HullCollision" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HullCollision"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+shape = SubResource("BoxShape3D_hull_collision")
+
+[node name="HullSections" type="Node3D" parent="."]
+
+[node name="HullBow" type="Node3D" parent="HullSections"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
+script = ExtResource("2_hull_script")
+ComponentName = "Hull (Bow)"
+MaxHealth = 150.0
+HullPos = 0
+
+[node name="HullStern" type="Node3D" parent="HullSections"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 7)
+script = ExtResource("2_hull_script")
+ComponentName = "Hull (Stern)"
+MaxHealth = 150.0
+HullPos = 1
+
+[node name="HullPort" type="Node3D" parent="HullSections"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 0)
+script = ExtResource("2_hull_script")
+ComponentName = "Hull (Port)"
+MaxHealth = 150.0
+HullPos = 2
+
+[node name="HullStarboard" type="Node3D" parent="HullSections"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+script = ExtResource("2_hull_script")
+ComponentName = "Hull (Starboard)"
+MaxHealth = 150.0
+HullPos = 3
+
+[node name="Masts" type="Node3D" parent="."]
+
+[node name="Foremast" type="Node3D" parent="Masts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -4)
+script = ExtResource("3_mast_script")
+ComponentName = "Foremast"
+MaxHealth = 80.0
+Type = 0
+SpeedContribution = 0.3
+
+[node name="MastMesh" type="MeshInstance3D" parent="Masts/Foremast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+mesh = SubResource("CylinderMesh_mast")
+surface_material_override/0 = SubResource("StandardMaterial3D_mast_wood")
+
+[node name="SailMesh" type="MeshInstance3D" parent="Masts/Foremast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -0.4)
+mesh = SubResource("BoxMesh_sail")
+surface_material_override/0 = SubResource("StandardMaterial3D_canvas")
+
+[node name="Mainmast" type="Node3D" parent="Masts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+script = ExtResource("3_mast_script")
+ComponentName = "Mainmast"
+MaxHealth = 100.0
+Type = 1
+SpeedContribution = 0.4
+
+[node name="MastMesh" type="MeshInstance3D" parent="Masts/Mainmast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 0)
+mesh = SubResource("CylinderMesh_mast")
+surface_material_override/0 = SubResource("StandardMaterial3D_mast_wood")
+
+[node name="SailMesh" type="MeshInstance3D" parent="Masts/Mainmast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7, -0.4)
+mesh = SubResource("BoxMesh_sail")
+surface_material_override/0 = SubResource("StandardMaterial3D_canvas")
+
+[node name="Mizzenmast" type="Node3D" parent="Masts"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 4)
+script = ExtResource("3_mast_script")
+ComponentName = "Mizzenmast"
+MaxHealth = 70.0
+Type = 2
+SpeedContribution = 0.3
+
+[node name="MastMesh" type="MeshInstance3D" parent="Masts/Mizzenmast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 0)
+mesh = SubResource("CylinderMesh_mast")
+surface_material_override/0 = SubResource("StandardMaterial3D_mast_wood")
+
+[node name="SailMesh" type="MeshInstance3D" parent="Masts/Mizzenmast"]
+transform = Transform3D(0.9, 0, 0, 0, 0.75, 0, 0, 0, 1, 0, 5.5, -0.4)
+mesh = SubResource("BoxMesh_sail")
+surface_material_override/0 = SubResource("StandardMaterial3D_canvas")
+
+[node name="PortCannons" type="Node3D" parent="."]
+
+[node name="PortCannon1" type="Node3D" parent="PortCannons"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -3, 0.3, -4)
+script = ExtResource("4_cannon_script")
+Side = 0
+CannonIndex = 0
+
+[node name="Base" type="MeshInstance3D" parent="PortCannons/PortCannon1"]
+mesh = SubResource("CylinderMesh_cannon_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="PortCannons/PortCannon1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="PortCannons/PortCannon1/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.75)
+mesh = SubResource("CylinderMesh_cannon_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="PortCannons/PortCannon1/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.7)
+
+[node name="PortCannon2" type="Node3D" parent="PortCannons"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -3, 0.3, 0)
+script = ExtResource("4_cannon_script")
+Side = 0
+CannonIndex = 1
+
+[node name="Base" type="MeshInstance3D" parent="PortCannons/PortCannon2"]
+mesh = SubResource("CylinderMesh_cannon_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="PortCannons/PortCannon2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="PortCannons/PortCannon2/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.75)
+mesh = SubResource("CylinderMesh_cannon_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="PortCannons/PortCannon2/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.7)
+
+[node name="PortCannon3" type="Node3D" parent="PortCannons"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -3, 0.3, 4)
+script = ExtResource("4_cannon_script")
+Side = 0
+CannonIndex = 2
+
+[node name="Base" type="MeshInstance3D" parent="PortCannons/PortCannon3"]
+mesh = SubResource("CylinderMesh_cannon_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="PortCannons/PortCannon3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="PortCannons/PortCannon3/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.75)
+mesh = SubResource("CylinderMesh_cannon_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="PortCannons/PortCannon3/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.7)
+
+[node name="StarboardCannons" type="Node3D" parent="."]
+
+[node name="StarboardCannon1" type="Node3D" parent="StarboardCannons"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 3, 0.3, -4)
+script = ExtResource("4_cannon_script")
+Side = 1
+CannonIndex = 0
+
+[node name="Base" type="MeshInstance3D" parent="StarboardCannons/StarboardCannon1"]
+mesh = SubResource("CylinderMesh_cannon_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="StarboardCannons/StarboardCannon1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="StarboardCannons/StarboardCannon1/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.75)
+mesh = SubResource("CylinderMesh_cannon_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="StarboardCannons/StarboardCannon1/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.7)
+
+[node name="StarboardCannon2" type="Node3D" parent="StarboardCannons"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 3, 0.3, 0)
+script = ExtResource("4_cannon_script")
+Side = 1
+CannonIndex = 1
+
+[node name="Base" type="MeshInstance3D" parent="StarboardCannons/StarboardCannon2"]
+mesh = SubResource("CylinderMesh_cannon_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="StarboardCannons/StarboardCannon2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="StarboardCannons/StarboardCannon2/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.75)
+mesh = SubResource("CylinderMesh_cannon_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="StarboardCannons/StarboardCannon2/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.7)
+
+[node name="StarboardCannon3" type="Node3D" parent="StarboardCannons"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 3, 0.3, 4)
+script = ExtResource("4_cannon_script")
+Side = 1
+CannonIndex = 2
+
+[node name="Base" type="MeshInstance3D" parent="StarboardCannons/StarboardCannon3"]
+mesh = SubResource("CylinderMesh_cannon_base")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="Barrel" type="Node3D" parent="StarboardCannons/StarboardCannon3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+
+[node name="BarrelMesh" type="MeshInstance3D" parent="StarboardCannons/StarboardCannon3/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, -0.75)
+mesh = SubResource("CylinderMesh_cannon_barrel")
+surface_material_override/0 = SubResource("StandardMaterial3D_cannon")
+
+[node name="MuzzlePoint" type="Marker3D" parent="StarboardCannons/StarboardCannon3/Barrel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.7)
