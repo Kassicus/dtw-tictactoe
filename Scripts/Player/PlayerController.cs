@@ -32,6 +32,10 @@ public partial class PlayerController : CharacterBody3D
     private bool _isInteracting = false;
     private Vector3 _moveDirection = Vector3.Zero;
 
+    // Cannon interaction
+    private ShipCannon _nearestCannon = null;
+    private const float CannonInteractionRange = 2.5f;
+
     [Signal]
     public delegate void InteractionStartedEventHandler(InteractionPoint point);
 
@@ -89,6 +93,9 @@ public partial class PlayerController : CharacterBody3D
 
         // Move the character
         MoveAndSlide();
+
+        // Update nearest cannon highlight
+        UpdateNearestCannon();
     }
 
     public override void _Input(InputEvent @event)
@@ -97,6 +104,15 @@ public partial class PlayerController : CharacterBody3D
         if (@event.IsActionPressed("interact"))
         {
             TryInteract();
+        }
+
+        // Handle F key for firing cannons
+        if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+        {
+            if (keyEvent.Keycode == Key.F)
+            {
+                TryFireCannon();
+            }
         }
 
         // Handle sprint toggle
@@ -218,6 +234,66 @@ public partial class PlayerController : CharacterBody3D
     private void HandleInteractionInput()
     {
         // Interaction-specific input is handled by the interaction point
+    }
+
+    private void UpdateNearestCannon()
+    {
+        if (_currentShip == null) return;
+
+        ShipCannon nearest = null;
+        float nearestDist = float.MaxValue;
+
+        // Check all cannons on the current ship
+        foreach (var cannon in _currentShip.PortCannons)
+        {
+            float dist = GlobalPosition.DistanceTo(cannon.GlobalPosition);
+            if (dist < CannonInteractionRange && dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = cannon;
+            }
+        }
+
+        foreach (var cannon in _currentShip.StarboardCannons)
+        {
+            float dist = GlobalPosition.DistanceTo(cannon.GlobalPosition);
+            if (dist < CannonInteractionRange && dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = cannon;
+            }
+        }
+
+        // Update highlighting
+        if (nearest != _nearestCannon)
+        {
+            _nearestCannon?.SetHighlighted(false);
+            _nearestCannon = nearest;
+            _nearestCannon?.SetHighlighted(true);
+        }
+    }
+
+    private void TryFireCannon()
+    {
+        if (_nearestCannon == null)
+        {
+            GD.Print("No cannon nearby. Walk to a cannon and press F.");
+            return;
+        }
+
+        if (!_nearestCannon.CanFire)
+        {
+            GD.Print("Cannon is reloading...");
+            return;
+        }
+
+        if (!_nearestCannon.CanFireAtEnemy())
+        {
+            GD.Print("This cannon doesn't face the enemy! Use a cannon on the other side of the ship.");
+            return;
+        }
+
+        _nearestCannon.FireAtEnemy();
     }
 
     /// <summary>

@@ -34,8 +34,8 @@ public partial class BattleTestController : Node
         }
 
         GD.Print("BattleTestController ready. Controls:");
-        GD.Print("  P - Fire player's port cannons");
-        GD.Print("  S - Fire player's starboard cannons");
+        GD.Print("  P - Fire player's port cannons (broadside)");
+        GD.Print("  F - Fire cannon (when standing near one)");
         GD.Print("  E - End command phase (execute)");
         GD.Print("  R - Reset battle");
         GD.Print("  D - Deal damage to player ship (test)");
@@ -70,16 +70,6 @@ public partial class BattleTestController : Node
                     var targetPos = enemyShip.GetTargetPoint("center");
                     _battleManager.QueueFireCommand(playerShip, ShipCannon.CannonSide.Port, targetPos);
                     GD.Print("Queued port broadside");
-                }
-                break;
-
-            case Key.S:
-                // Fire starboard broadside at enemy
-                if (playerShip != null && enemyShip != null)
-                {
-                    var targetPos = enemyShip.GetTargetPoint("center");
-                    _battleManager.QueueFireCommand(playerShip, ShipCannon.CannonSide.Starboard, targetPos);
-                    GD.Print("Queued starboard broadside");
                 }
                 break;
 

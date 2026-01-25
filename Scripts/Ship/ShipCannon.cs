@@ -21,6 +21,8 @@ public partial class ShipCannon : ShipComponent
     private GpuParticles3D _muzzleFlash;
     private GpuParticles3D _smoke;
     private MeshInstance3D _cannonMesh;
+    private Area3D _interactionArea;
+    private MeshInstance3D _highlightMesh;
 
     // Shared haze material and mesh (created once, reused)
     private static StandardMaterial3D _hazeMaterial;
@@ -32,16 +34,21 @@ public partial class ShipCannon : ShipComponent
     private const float BaseFlightDuration = 1.2f;
     private const float FlightDurationPerUnit = 0.04f;
     private const float AimDuration = 0.3f;
+    private const float InteractionRange = 2f;
 
     // Reload time (affected by damage)
     [Export] public float BaseReloadTime { get; set; } = 3f;
     private float _reloadProgress = 0f;
     private bool _isLoaded = true;
+    private bool _isHighlighted = false;
 
     // Pending fire data
     private Vector3 _pendingTarget;
     private Action<Vector3> _pendingOnImpact;
     private Tween _aimTween;
+
+    // Barrel default orientation (for resetting after fire)
+    private Transform3D _barrelDefaultTransform;
 
     [Signal]
     public delegate void CannonFiredEventHandler(ShipCannon cannon, Vector3 targetPos);
@@ -72,11 +79,165 @@ public partial class ShipCannon : ShipComponent
             _barrel.AddChild(_muzzlePoint);
         }
 
+        // Store the default barrel orientation for resetting after fire
+        // The barrel should point in the cannon's local -Z direction (outward)
+        // Reset to identity rotation with just the Y offset for the pivot
+        _barrelDefaultTransform = new Transform3D(Basis.Identity, new Vector3(0, 0.2f, 0));
+        _barrel.Transform = _barrelDefaultTransform;
+
         // Create particle systems
         CreateMuzzleFlash();
         CreateSmoke();
 
+        // Create interaction area for player to fire cannon
+        CreateInteractionArea();
+
         GD.Print($"ShipCannon _Ready - {ComponentName}");
+    }
+
+    private void CreateInteractionArea()
+    {
+        _interactionArea = new Area3D();
+        _interactionArea.Name = "CannonInteractionArea";
+
+        var collision = new CollisionShape3D();
+        var sphere = new SphereShape3D();
+        sphere.Radius = InteractionRange;
+        collision.Shape = sphere;
+        _interactionArea.AddChild(collision);
+
+        // Create highlight ring
+        _highlightMesh = new MeshInstance3D();
+        var torus = new TorusMesh();
+        torus.InnerRadius = 0.6f;
+        torus.OuterRadius = 0.8f;
+        torus.Rings = 16;
+        torus.RingSegments = 32;
+
+        var mat = new StandardMaterial3D();
+        mat.AlbedoColor = new Color(1f, 0.5f, 0.2f, 0.6f);
+        mat.EmissionEnabled = true;
+        mat.Emission = new Color(1f, 0.4f, 0.1f);
+        mat.EmissionEnergyMultiplier = 1.5f;
+        mat.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+        torus.Material = mat;
+
+        _highlightMesh.Mesh = torus;
+        _highlightMesh.Rotation = new Vector3(Mathf.Pi / 2f, 0, 0);
+        _highlightMesh.Visible = false;
+        _interactionArea.AddChild(_highlightMesh);
+
+        AddChild(_interactionArea);
+    }
+
+    /// <summary>
+    /// Check if a player is within interaction range of this cannon.
+    /// </summary>
+    public bool IsPlayerInRange(Vector3 playerPosition)
+    {
+        return GlobalPosition.DistanceTo(playerPosition) <= InteractionRange;
+    }
+
+    /// <summary>
+    /// Set the highlight state for this cannon.
+    /// </summary>
+    public void SetHighlighted(bool highlighted)
+    {
+        if (_isHighlighted == highlighted) return;
+        _isHighlighted = highlighted;
+
+        if (_highlightMesh != null)
+        {
+            // Only show highlight if cannon can fire AND faces the enemy
+            bool canFireAtEnemy = CanFire && CanFireAtEnemy();
+            _highlightMesh.Visible = highlighted && canFireAtEnemy;
+        }
+    }
+
+    /// <summary>
+    /// Check if this cannon can fire at the enemy (is loaded, not destroyed, and faces enemy).
+    /// </summary>
+    public bool CanFireAtEnemy()
+    {
+        if (!CanFire) return false;
+
+        var parentShip = GetParentShip();
+        if (parentShip == null) return false;
+
+        // Find enemy ship
+        foreach (var node in GetTree().GetNodesInGroup("ships"))
+        {
+            if (node is Ship ship && ship != parentShip)
+            {
+                return IsFacingTarget(ship.GetTargetPoint("center"));
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Get the direction this cannon faces (outward from the ship).
+    /// </summary>
+    public Vector3 GetFacingDirection()
+    {
+        // The cannon fires in its local -Z direction
+        return -GlobalTransform.Basis.Z;
+    }
+
+    /// <summary>
+    /// Check if this cannon is facing toward a target position.
+    /// </summary>
+    public bool IsFacingTarget(Vector3 targetPos)
+    {
+        var toTarget = (targetPos - GlobalPosition).Normalized();
+        var facing = GetFacingDirection();
+        float dot = facing.Dot(toTarget);
+        // If dot product > 0, the cannon is roughly facing the target
+        return dot > 0.1f;
+    }
+
+    /// <summary>
+    /// Fire at the enemy ship (used when player interacts with cannon).
+    /// </summary>
+    public void FireAtEnemy()
+    {
+        if (!CanFire) return;
+
+        // Find the enemy ship
+        var parentShip = GetParentShip();
+        if (parentShip == null) return;
+
+        Ship enemyShip = null;
+        foreach (var node in GetTree().GetNodesInGroup("ships"))
+        {
+            if (node is Ship ship && ship != parentShip)
+            {
+                enemyShip = ship;
+                break;
+            }
+        }
+
+        if (enemyShip == null) return;
+
+        // Calculate target position on enemy ship
+        var targetPos = enemyShip.GetTargetPoint("center");
+
+        // Check if this cannon faces the enemy
+        if (!IsFacingTarget(targetPos))
+        {
+            GD.Print($"{ComponentName} is not facing the enemy - cannot fire!");
+            return;
+        }
+
+        // Add slight randomness for realism
+        targetPos += new Vector3(
+            (float)GD.RandRange(-1.0, 1.0),
+            (float)GD.RandRange(-0.5, 0.5),
+            (float)GD.RandRange(-1.0, 1.0)
+        );
+
+        Fire(targetPos, null);
+        GD.Print($"Player fired {ComponentName} at {enemyShip.ShipName}!");
     }
 
     public override void _Process(double delta)
@@ -169,6 +330,26 @@ public partial class ShipCannon : ShipComponent
         // Clear pending
         _pendingTarget = Vector3.Zero;
         _pendingOnImpact = null;
+
+        // Reset barrel to default position after a delay
+        ResetBarrelDelayed(1.5f);
+    }
+
+    private void ResetBarrelDelayed(float delay)
+    {
+        if (_barrel == null) return;
+
+        var timer = GetTree().CreateTimer(delay);
+        timer.Timeout += () =>
+        {
+            if (_barrel != null && IsInstanceValid(_barrel))
+            {
+                var tween = CreateTween();
+                tween.TweenProperty(_barrel, "transform", _barrelDefaultTransform, 0.5f)
+                    .SetEase(Tween.EaseType.InOut)
+                    .SetTrans(Tween.TransitionType.Quad);
+            }
+        };
     }
 
     private void SpawnCannonball(Vector3 startPos, Vector3 endPos, float duration)
@@ -176,8 +357,30 @@ public partial class ShipCannon : ShipComponent
         var cannonball = new Cannonball();
         cannonball.OnImpact = _pendingOnImpact;
 
+        var parentShip = GetParentShip();
+        cannonball.FiringShip = parentShip;
+        if (parentShip != null)
+        {
+            cannonball.FiringSide = parentShip.Side;
+            GD.Print($"Cannonball fired from {parentShip.ShipName} (Side: {parentShip.Side})");
+        }
+
         GetTree().CurrentScene.AddChild(cannonball);
         cannonball.StartFlight(startPos, endPos, ArcHeight, duration);
+    }
+
+    private Ship GetParentShip()
+    {
+        Node current = this;
+        while (current != null)
+        {
+            if (current is Ship ship)
+            {
+                return ship;
+            }
+            current = current.GetParent();
+        }
+        return null;
     }
 
     private void AimBarrelAt(Vector3 targetPos, Action onComplete = null)

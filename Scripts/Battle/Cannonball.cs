@@ -18,6 +18,10 @@ public partial class Cannonball : Node3D
     private float _flightProgress;
     private bool _isFlying = false;
 
+    // Track which ship fired this cannonball to prevent friendly fire
+    public Ship FiringShip { get; set; }
+    public Ship.ShipSide FiringSide { get; set; } = Ship.ShipSide.Player;
+
     // Callback when hitting target
     public Action<Vector3> OnImpact { get; set; }
 
@@ -197,6 +201,13 @@ public partial class Cannonball : Node3D
 
     private void CheckShipHit(Ship ship)
     {
+        // Skip friendly fire - check by side to be robust
+        if (ship.Side == FiringSide)
+        {
+            GD.Print($"Cannonball: Preventing friendly fire on {ship.ShipName} (same side: {FiringSide})");
+            return;
+        }
+
         float distance = GlobalPosition.DistanceTo(ship.GlobalPosition);
         if (distance < 10f) // Within ship bounds
         {
@@ -229,7 +240,28 @@ public partial class Cannonball : Node3D
         {
             if (current is ShipComponent component)
             {
+                // Check for friendly fire - skip if this component belongs to a ship on the same side
+                var parentShip = FindParentShip(component);
+                if (parentShip != null && parentShip.Side == FiringSide)
+                {
+                    GD.Print($"Cannonball: Preventing friendly fire on component {component.ComponentName} (same side: {FiringSide})");
+                    return null; // Ignore friendly fire
+                }
                 return component;
+            }
+            current = current.GetParent();
+        }
+        return null;
+    }
+
+    private Ship FindParentShip(Node node)
+    {
+        var current = node;
+        while (current != null)
+        {
+            if (current is Ship ship)
+            {
+                return ship;
             }
             current = current.GetParent();
         }
